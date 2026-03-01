@@ -1,7 +1,25 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { LaunchData, LaunchPlan, LaunchPhase } from "../types";
+const launchModelLabel = (model: LaunchData['launchModel']): string => {
+  return model === 'opportunity'
+    ? 'Oportunidade / Oportunidade Amplificada'
+    : 'Jeito Errado vs Jeito Certo';
+};
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+let ai: GoogleGenAI | null = null;
+
+function getAiClient(): GoogleGenAI {
+  if (!ai) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      throw new Error(
+        "Missing VITE_GEMINI_API_KEY. Create a .env file with VITE_GEMINI_API_KEY=<your key>."
+      );
+    }
+    ai = new GoogleGenAI({ apiKey });
+  }
+  return ai;
+}
 
 export async function generateLaunchOverview(data: LaunchData): Promise<LaunchPlan> {
   const prompt = `
@@ -11,8 +29,14 @@ export async function generateLaunchOverview(data: LaunchData): Promise<LaunchPl
     Produto: ${data.productName}
     Nicho: ${data.niche}
     Público-Alvo: ${data.targetAudience}
+    Nome interno do Avatar: ${data.avatarName}
     Problema Principal: ${data.mainProblem}
     Benefício Principal: ${data.mainBenefit}
+    História Atual do Avatar (informada pelo estrategista): ${data.avatarStory}
+    Dores e sintomas mapeados: ${data.avatarPainPoints}
+    Objeções ou crenças limitantes: ${data.avatarObjections}
+    Estado desejado / visão de futuro: ${data.avatarDesiredState}
+    Sinalizado para o CPL 3 (demonstração/solução): ${data.cplThreeSolution}
     
     DETALHES DA OFERTA:
     Preço de Venda: ${data.price}
@@ -24,7 +48,7 @@ export async function generateLaunchOverview(data: LaunchData): Promise<LaunchPl
     Outros Detalhes: ${data.offerDetails}
     
     Data de Início: ${data.launchDate}
-    Modelo de CPL 1: ${data.launchModel === 'opportunity' ? 'A Oportunidade' : 'Jeito Certo vs Jeito Errado'}
+    Modelo de CPL 1: ${launchModelLabel(data.launchModel)}
 
     O plano deve conter:
     1. História do Avatar: Uma narrativa detalhada sobre a jornada do cliente ideal.
@@ -40,7 +64,7 @@ export async function generateLaunchOverview(data: LaunchData): Promise<LaunchPl
     Retorne a resposta estritamente no formato JSON solicitado.
   `;
 
-  const response = await ai.models.generateContent({
+  const response = await getAiClient().models.generateContent({
     model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
@@ -81,8 +105,13 @@ export async function generatePhaseDetails(data: LaunchData, phase: LaunchPhase)
     
     Contexto do Produto:
     Público: ${data.targetAudience}
+    Avatar (apelido interno): ${data.avatarName}
     Promessa: ${data.mainBenefit}
-    Modelo: ${data.launchModel}
+    Modelo: ${launchModelLabel(data.launchModel)}
+    Dores prioritárias: ${data.avatarPainPoints}
+    Objeções declaradas: ${data.avatarObjections}
+    Visão de futuro desejada: ${data.avatarDesiredState}
+    Diretriz para o CPL 3 / solução âncora: ${data.cplThreeSolution}
     
     OFERTA DETALHADA:
     Preço: ${data.price}
@@ -104,7 +133,7 @@ export async function generatePhaseDetails(data: LaunchData, phase: LaunchPhase)
     Retorne a resposta estritamente no formato JSON solicitado.
   `;
 
-  const response = await ai.models.generateContent({
+  const response = await getAiClient().models.generateContent({
     model: "gemini-3-flash-preview",
     contents: prompt,
     config: {

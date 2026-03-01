@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { LaunchPlan, LaunchPhase } from '../types';
 import { ChevronDown, ChevronUp, FileText, Mail, Video, Megaphone, Copy, Check, User, Share2, Info, Layout, Bell, ListChecks, Sparkles, Wand2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -6,9 +6,22 @@ import ReactMarkdown from 'react-markdown';
 interface Props {
   plan: LaunchPlan;
   onGeneratePhase: (id: string) => void;
+  canGeneratePhase?: boolean;
+  isDefaultPlan?: boolean;
+  pendingAvatarStory?: string;
+  onOpenBriefing?: () => void;
+  briefingPanel?: ReactNode;
 }
 
-export default function LaunchResult({ plan, onGeneratePhase }: Props) {
+export default function LaunchResult({
+  plan,
+  onGeneratePhase,
+  canGeneratePhase = false,
+  isDefaultPlan = false,
+  pendingAvatarStory = '',
+  onOpenBriefing,
+  briefingPanel,
+}: Props) {
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'strategy' | 'phases'>('strategy');
@@ -31,9 +44,18 @@ export default function LaunchResult({ plan, onGeneratePhase }: Props) {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-slate-800">Sua Estratégia de Lançamento</h2>
-        <div className="flex bg-slate-100 p-1 rounded-xl">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <h2 className="text-2xl font-bold text-slate-800">Sua Estratégia de Lançamento</h2>
+          <button
+            type="button"
+            onClick={() => onOpenBriefing?.()}
+            className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-white px-5 py-2 text-sm font-semibold text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-50"
+          >
+            Diagnóstico Estratégico
+          </button>
+        </div>
+        <div className="flex bg-slate-100 p-1 rounded-xl self-start lg:self-auto">
           <button
             onClick={() => setActiveTab('strategy')}
             className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'strategy' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -49,6 +71,18 @@ export default function LaunchResult({ plan, onGeneratePhase }: Props) {
         </div>
       </div>
 
+      {briefingPanel}
+
+      {isDefaultPlan && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 text-sm flex items-start gap-3">
+          <Sparkles size={18} className="mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold">Pré-visualização base</p>
+            <p>Os dados salvos no diagnóstico alimentam os geradores de fase. Preencha o briefing e use os botões em cada fase para criar roteiros personalizados com IA.</p>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'strategy' ? (
         <div className="grid grid-cols-1 gap-6">
           <div className="bg-white p-8 rounded-2xl border-2 border-indigo-100 shadow-md relative overflow-hidden">
@@ -62,59 +96,72 @@ export default function LaunchResult({ plan, onGeneratePhase }: Props) {
               <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">História do Avatar</h3>
             </div>
             <div className="prose prose-indigo max-w-none text-slate-600 leading-relaxed relative">
-              <ReactMarkdown>{plan.avatarHistory}</ReactMarkdown>
+              <ReactMarkdown>{isDefaultPlan && pendingAvatarStory ? pendingAvatarStory : plan.avatarHistory}</ReactMarkdown>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
-                  <Bell size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800">SNA (Sistema de Notificação)</h3>
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-indigo-500/50">Bloco informativo</p>
+                <h3 className="text-xl font-black text-slate-900">Diretrizes fixas do lançamento</h3>
+                <p className="text-sm text-slate-500">
+                  Aqui ficam os conteúdos de referência que permanecem visíveis mesmo antes de gerar a estratégia personalizada.
+                </p>
               </div>
-              <div className="prose prose-slate max-w-none text-slate-600 text-sm">
-                <ReactMarkdown>{plan.snaStrategy}</ReactMarkdown>
-              </div>
+              <span className="text-xs font-bold rounded-full bg-indigo-50 text-indigo-600 px-3 py-1">Informativo</span>
             </div>
 
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
-                  <ListChecks size={24} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
+                    <Bell size={24} />
+                  </div>
+                  <h4 className="text-xl font-bold text-slate-800">SNA (Sistema de Notificação)</h4>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800">Mapa de Entregáveis (Insider)</h3>
+                <div className="prose prose-slate max-w-none text-slate-600 text-sm">
+                  <ReactMarkdown>{plan.snaStrategy}</ReactMarkdown>
+                </div>
               </div>
-              <div className="prose prose-slate max-w-none text-slate-600 text-sm">
-                <ReactMarkdown>{plan.insiderDeliverablesMap}</ReactMarkdown>
-              </div>
-            </div>
 
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                  <Share2 size={24} />
+              <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
+                    <ListChecks size={24} />
+                  </div>
+                  <h4 className="text-xl font-bold text-slate-800">Mapa de Entregáveis (Insider)</h4>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800">Redes Sociais</h3>
+                <div className="prose prose-slate max-w-none text-slate-600 text-sm">
+                  <ReactMarkdown>{plan.insiderDeliverablesMap}</ReactMarkdown>
+                </div>
               </div>
-              <div className="prose prose-slate max-w-none text-slate-600 text-sm">
-                <ReactMarkdown>{plan.socialMediaStrategy}</ReactMarkdown>
-              </div>
-            </div>
 
-            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                  <Info size={24} />
+              <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                    <Share2 size={24} />
+                  </div>
+                  <h4 className="text-xl font-bold text-slate-800">Redes Sociais</h4>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800">Modelo Escolhido</h3>
+                <div className="prose prose-slate max-w-none text-slate-600 text-sm">
+                  <ReactMarkdown>{plan.socialMediaStrategy}</ReactMarkdown>
+                </div>
               </div>
-              <div className="prose prose-slate max-w-none text-slate-600 text-sm">
-                <ReactMarkdown>{plan.launchModelExplanation}</ReactMarkdown>
+
+              <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                    <Info size={24} />
+                  </div>
+                  <h4 className="text-xl font-bold text-slate-800">Modelo Escolhido</h4>
+                </div>
+                <div className="prose prose-slate max-w-none text-slate-600 text-sm">
+                  <ReactMarkdown>{plan.launchModelExplanation}</ReactMarkdown>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       ) : (
         <div className="space-y-4">
@@ -148,10 +195,14 @@ export default function LaunchResult({ plan, onGeneratePhase }: Props) {
                 <div className="px-6 pb-6 space-y-6 border-t border-slate-50 pt-4">
                   {!phase.scripts ? (
                     <div className="py-8 text-center">
-                      <p className="text-slate-500 mb-6">Os roteiros e criativos desta fase ainda não foram gerados.</p>
+                      <p className="text-slate-500 mb-6">
+                        {canGeneratePhase
+                          ? 'Os roteiros e criativos desta fase ainda não foram gerados.'
+                          : 'Gere a estratégia completa para liberar os roteiros detalhados desta fase.'}
+                      </p>
                       <button
-                        onClick={() => onGeneratePhase(phase.id)}
-                        disabled={phase.isGenerating}
+                        onClick={() => canGeneratePhase && onGeneratePhase(phase.id)}
+                        disabled={phase.isGenerating || !canGeneratePhase}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition-all flex items-center justify-center gap-2 mx-auto shadow-lg shadow-indigo-100 disabled:opacity-50"
                       >
                         {phase.isGenerating ? (
@@ -159,10 +210,15 @@ export default function LaunchResult({ plan, onGeneratePhase }: Props) {
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                             Gerando Roteiros...
                           </>
-                        ) : (
+                        ) : canGeneratePhase ? (
                           <>
                             <Wand2 size={18} />
                             Gerar Roteiros e Criativos
+                          </>
+                        ) : (
+                          <>
+                            <Layout size={18} />
+                            Aguarde o briefing completo
                           </>
                         )}
                       </button>

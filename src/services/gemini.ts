@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { LaunchData, LaunchPlan, LaunchPhase } from "../types";
+import { GuidedFieldKey, getFieldPrompt, getLaunchDataSnapshot } from "../guidance";
+import { GuidanceEntry, LaunchData, LaunchPlan, LaunchPhase } from "../types";
 const launchModelLabel = (model: LaunchData['launchModel']): string => {
   return model === 'opportunity'
     ? 'Oportunidade / Oportunidade Amplificada'
@@ -98,7 +99,11 @@ export async function generateLaunchOverview(data: LaunchData): Promise<LaunchPl
   return JSON.parse(response.text || '{"structure": []}');
 }
 
-export async function generatePhaseDetails(data: LaunchData, phase: LaunchPhase): Promise<NonNullable<LaunchPhase['scripts']>> {
+export async function generatePhaseDetails(
+  data: LaunchData,
+  phase: LaunchPhase,
+  guidance?: GuidanceEntry
+): Promise<NonNullable<LaunchPhase['scripts']>> {
   const prompt = `
     Atue como um especialista em Fórmula de Lançamento (Erico Rocha).
     Gere os ROTEIROS e CRIATIVOS detalhados para a fase "${phase.name}" do lançamento do produto "${data.productName}".
@@ -122,6 +127,10 @@ export async function generatePhaseDetails(data: LaunchData, phase: LaunchPhase)
     Escassez: ${data.scarcity}
 
     Descrição da Fase: ${phase.description}
+
+    Instruções personalizadas do estrategista:
+    Pontos importantes: ${guidance?.keyPoints || 'Não informado'}
+    Estrutura/Gatilhos: ${guidance?.framework || 'Não informado'}
 
     Para esta fase específica, gere:
     - Roteiros de vídeos (incluindo roteiro para HeyGen/Avatar IA se aplicável).
@@ -161,4 +170,37 @@ export async function generatePhaseDetails(data: LaunchData, phase: LaunchPhase)
 
   const result = JSON.parse(response.text || '{"scripts": []}');
   return result.scripts;
+}
+
+export async function generateGuidedFieldCopy(
+  field: GuidedFieldKey,
+  data: LaunchData,
+  guidance?: GuidanceEntry
+): Promise<string> {
+  const descriptor = getFieldPrompt(field);
+  const context = getLaunchDataSnapshot(data);
+  const prompt = `
+    Você é uma estrategista sênior da Fórmula de Lançamento.
+    Com base nos dados do briefing abaixo, reescreva o campo "${field}".
+
+    Objetivo do campo: ${descriptor}
+
+    Pontos importantes informados:
+    ${guidance?.keyPoints || 'Não fornecido'}
+
+    Estrutura, gatilhos ou frameworks desejados:
+    ${guidance?.framework || 'Não fornecido'}
+
+    Dados do diagnóstico:
+    ${JSON.stringify(context, null, 2)}
+
+    Gere um texto único, direto e pronto para ser usado no campo alvo. Use tom consultivo e evite repetições.
+  `;
+
+  const response = await getAiClient().models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+
+  return response.text?.trim() ?? '';
 }

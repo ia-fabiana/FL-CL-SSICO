@@ -42,6 +42,14 @@ export interface LaunchPlan {
   structure: LaunchPhase[];
 }
 
+export interface GuidanceEntry {
+  keyPoints: string;
+  framework: string;
+  updatedAt?: string;
+}
+
+export type GuidanceMap = Record<string, GuidanceEntry>;
+
 export type ChecklistStatus = 'pending' | 'approved';
 
 export type ChecklistBlockId =
@@ -85,6 +93,7 @@ export interface ChecklistData {
 
 export interface StoredBriefing extends LaunchData {
   checklist: ChecklistData;
+  guidance?: GuidanceMap;
   createdAt?: unknown;
   updatedAt?: unknown;
 }

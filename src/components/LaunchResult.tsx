@@ -122,17 +122,12 @@ export default function LaunchResult({
                 onClick={() => setExpandedPhase(expandedPhase === phase.id ? null : phase.id)}
                 className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">
-                    {idx + 1}
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-bold text-slate-800">{phase.name}</h3>
-                    <p className="text-sm text-slate-500">{phase.description}</p>
-                    {phaseDates?.[phase.id] && (
-                      <p className="text-xs font-semibold text-indigo-500">{phaseDates[phase.id]}</p>
-                    )}
-                  </div>
+                <div className="text-left">
+                  <h3 className="font-bold text-slate-800">{phase.name}</h3>
+                  <p className="text-sm text-slate-500">{phase.description}</p>
+                  {phaseDates?.[phase.id] && (
+                    <p className="text-xs font-semibold text-indigo-500">{phaseDates[phase.id]}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   {phase.scripts && <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">Gerado</span>}

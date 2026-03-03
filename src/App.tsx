@@ -5,11 +5,10 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChecklistData, GuidanceEntry, GuidanceMap, LaunchData, LaunchPlan, LaunchPhase, PhaseContentMap, StoredBriefing } from './types';
-import { generateGuidedFieldCopy, generatePhaseDetails } from './services/gemini';
+import { generateGuidedFieldCopy, generatePhaseDetails, generatePhaseTasks } from './services/gemini';
 import LaunchForm from './components/LaunchForm';
 import { Sparkles, BookOpen, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
-import ReactMarkdown from 'react-markdown';
 import { PublikaShowcase } from './components/PublikaShowcase';
 import { PublikaEditor } from './components/PublikaEditor';
 import { db } from './firebase';
@@ -143,13 +142,21 @@ export default function App() {
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [scriptDurationMinutes, setScriptDurationMinutes] = useState<number>(DEFAULT_SCRIPT_DURATION_MINUTES);
   const briefingPanelRef = useRef<HTMLDivElement | null>(null);
+
+  const replacePhaseInStructure = (
+    structure: LaunchPhase[],
+    phaseId: string,
+    patch: Partial<LaunchPhase>
+  ): LaunchPhase[] => structure.map(phase => (phase.id === phaseId ? { ...phase, ...patch } : phase));
+
   const serializePhaseContent = (structure: LaunchPhase[]): PhaseContentMap =>
     structure.reduce<PhaseContentMap>((acc, phase) => {
-      if (phase.liveScript) {
+      if (phase.liveScript || phase.tasks?.length) {
         acc[phase.id] = {
           liveScript: phase.liveScript,
           updatedAt: phase.liveScriptUpdatedAt ?? new Date().toISOString(),
           durationMinutes: phase.liveScriptDurationMinutes,
+          tasks: phase.tasks ?? [],
         };
       }
       return acc;
@@ -169,6 +176,7 @@ export default function App() {
           liveScript: stored.liveScript ?? phase.liveScript,
           liveScriptUpdatedAt: stored.updatedAt ?? phase.liveScriptUpdatedAt,
           liveScriptDurationMinutes: stored.durationMinutes ?? phase.liveScriptDurationMinutes,
+          tasks: stored.tasks ?? phase.tasks,
         };
       }),
     }));
@@ -223,12 +231,17 @@ export default function App() {
         scriptDurationMinutes
       );
 
-      updatePhaseStructure(phaseId, {
-        liveScript,
-        liveScriptUpdatedAt: new Date().toISOString(),
-        liveScriptDurationMinutes: scriptDurationMinutes,
-        isGenerating: false,
+      let nextStructure: LaunchPhase[] = [];
+      setPlan(prev => {
+        nextStructure = replacePhaseInStructure(prev.structure, phaseId, {
+          liveScript,
+          liveScriptUpdatedAt: new Date().toISOString(),
+          liveScriptDurationMinutes: scriptDurationMinutes,
+          isGenerating: false,
+        });
+        return { ...prev, structure: nextStructure };
       });
+      await persistPhaseContent(nextStructure);
     } catch (err) {
       console.error(err);
       setError('Erro ao gerar detalhes da fase. Tente novamente.');
@@ -378,6 +391,25 @@ export default function App() {
     }
   }, [plan.structure, selectedPhaseId]);
 
+  const ensureBriefingDocument = async () => {
+    if (briefingId) {
+      return briefingId;
+    }
+
+    const baseData = normalizeLaunchData(launchData ?? formDefaults ?? INITIAL_BRIEFING);
+    const createdId = await persistBriefing(baseData);
+    setBriefingId(createdId);
+    return createdId;
+  };
+
+  const persistPhaseContent = async (structure: LaunchPhase[]) => {
+    const ensuredId = await ensureBriefingDocument();
+    await updateDoc(doc(db, 'launchBriefings', ensuredId), {
+      phaseContent: serializePhaseContent(structure),
+      updatedAt: serverTimestamp(),
+    });
+  };
+
   const persistBriefing = async (data: LaunchData) => {
     const normalizedChecklist = mergeChecklist(checklist);
     setChecklist(normalizedChecklist);
@@ -494,6 +526,77 @@ export default function App() {
       setError('Não foi possível processar este bloco. Tente novamente.');
     } finally {
       setGuidanceProcessing(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const handleGeneratePhaseTasks = async (phaseId: string) => {
+    if (!launchData) {
+      setError('Preencha e salve o diagnostico antes de gerar etapas com IA.');
+      return;
+    }
+
+    const phaseDefinition = plan.structure.find(phase => phase.id === phaseId);
+    if (!phaseDefinition) {
+      return;
+    }
+
+    updatePhaseStructure(phaseId, { isGeneratingTasks: true });
+
+    try {
+      const generatedTasks = await generatePhaseTasks(
+        launchData,
+        phaseDefinition,
+        guidance[guidanceKeyForPhase(phaseId)]
+      );
+
+      let nextStructure: LaunchPhase[] = [];
+      setPlan(prev => {
+        nextStructure = replacePhaseInStructure(prev.structure, phaseId, {
+          tasks: generatedTasks,
+          isGeneratingTasks: false,
+        });
+        return { ...prev, structure: nextStructure };
+      });
+      await persistPhaseContent(nextStructure);
+    } catch (err) {
+      console.error('Erro ao gerar etapas da fase', err);
+      setError('Nao foi possivel gerar as etapas da fase. Tente novamente.');
+      updatePhaseStructure(phaseId, { isGeneratingTasks: false });
+    }
+  };
+
+  const handleToggleTaskDone = async (phaseId: string, taskId: string) => {
+    let nextStructure: LaunchPhase[] = [];
+
+    setPlan(prev => {
+      nextStructure = prev.structure.map(phase => {
+        if (phase.id !== phaseId) {
+          return phase;
+        }
+
+        const nextTasks = (phase.tasks ?? []).map(task => {
+          if (task.id !== taskId) {
+            return task;
+          }
+          const nextDone = !task.done;
+          return {
+            ...task,
+            done: nextDone,
+            doneAt: nextDone ? new Date().toISOString() : undefined,
+          };
+        });
+
+        return { ...phase, tasks: nextTasks };
+      });
+
+      return { ...prev, structure: nextStructure };
+    });
+
+    try {
+      await persistPhaseContent(nextStructure);
+    } catch (err) {
+      console.error('Erro ao atualizar etapa da fase', err);
+      setError('Nao foi possivel salvar o status da etapa. Tente novamente.');
     }
   };
 
@@ -676,17 +779,6 @@ export default function App() {
             Transforme seu conhecimento em um império digital. Gere toda a estrutura do seu 
             <strong> Lançamento Clássico</strong> em segundos.
           </motion.p>
-          <motion.a
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            href="/uploads/checklist-classico-perfeito.xlsx"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 inline-flex items-center justify-center rounded-full border border-indigo-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
-          >
-            Baixar Checklist Classico
-          </motion.a>
         </header>
 
         <div className="mt-12 flex flex-col gap-8 lg:flex-row">
@@ -775,14 +867,24 @@ export default function App() {
                         <p className="text-xs font-semibold text-indigo-500 mt-2">{phaseDates[selectedPhase.id]}</p>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => selectedPhase && generatePhaseWithGuidance(selectedPhase.id)}
-                      disabled={selectedPhase.isGenerating || !launchData}
-                      className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-black uppercase tracking-[0.3em] text-white hover:bg-slate-800 disabled:opacity-60"
-                    >
-                      {selectedPhase.isGenerating ? 'Gerando...' : 'Gerar texto da live'}
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectedPhase && handleGeneratePhaseTasks(selectedPhase.id)}
+                        disabled={selectedPhase.isGeneratingTasks || !launchData}
+                        className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-[0.25em] text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-60"
+                      >
+                        {selectedPhase.isGeneratingTasks ? 'Gerando etapas...' : 'Gerar etapas com IA'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectedPhase && generatePhaseWithGuidance(selectedPhase.id)}
+                        disabled={selectedPhase.isGenerating || !launchData}
+                        className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-black uppercase tracking-[0.3em] text-white hover:bg-slate-800 disabled:opacity-60"
+                      >
+                        {selectedPhase.isGenerating ? 'Gerando...' : 'Gerar texto da live'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid gap-6 md:grid-cols-2">
@@ -815,6 +917,50 @@ export default function App() {
                     >
                       {selectedPhaseGuidanceStatus.saving ? 'Salvando...' : 'Salvar instruções'}
                     </button>
+                  </div>
+
+                  <div className="space-y-3 rounded-3xl border border-emerald-100 bg-emerald-50/60 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-emerald-700">
+                        Etapas operacionais da fase
+                      </p>
+                      <span className="text-xs font-semibold text-emerald-700">
+                        {(selectedPhase.tasks ?? []).filter(task => task.done).length}/{(selectedPhase.tasks ?? []).length} concluÃ­das
+                      </span>
+                    </div>
+                    {(selectedPhase.tasks ?? []).length ? (
+                      <div className="space-y-2">
+                        {(selectedPhase.tasks ?? []).map(task => (
+                          <button
+                            type="button"
+                            key={task.id}
+                            onClick={() => handleToggleTaskDone(selectedPhase.id, task.id)}
+                            className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                              task.done
+                                ? 'border-emerald-300 bg-white text-emerald-800'
+                                : 'border-emerald-100 bg-white text-slate-700 hover:border-emerald-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-sm font-semibold">{task.title}</p>
+                              <span className="text-xs font-bold uppercase tracking-[0.2em]">
+                                {task.done ? 'OK' : 'Pendente'}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-slate-500">{task.details}</p>
+                            {typeof task.dueOffsetDays === 'number' && (
+                              <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                                D{task.dueOffsetDays >= 0 ? `+${task.dueOffsetDays}` : task.dueOffsetDays}
+                              </p>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-emerald-800/80">
+                        Clique em "Gerar etapas com IA" para montar o checklist desta fase automaticamente.
+                      </p>
+                    )}
                   </div>
 
                   <div className="rounded-3xl border border-indigo-100 bg-indigo-50/80 p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

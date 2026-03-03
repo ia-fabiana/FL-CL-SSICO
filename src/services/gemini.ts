@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { GuidedFieldKey, getFieldPrompt, getLaunchDataSnapshot } from "../guidance";
-import { GuidanceEntry, LaunchData, LaunchPlan, LaunchPhase } from "../types";
+import { GuidanceEntry, LaunchData, LaunchPlan, LaunchPhase, PhaseTask } from "../types";
+import { DEFAULT_SCRIPT_DURATION_MINUTES, ESTIMATED_WORDS_PER_MINUTE } from "../constants";
 const launchModelLabel = (model: LaunchData['launchModel']): string => {
   return model === 'opportunity'
     ? 'Oportunidade / Oportunidade Amplificada'
@@ -102,74 +103,54 @@ export async function generateLaunchOverview(data: LaunchData): Promise<LaunchPl
 export async function generatePhaseDetails(
   data: LaunchData,
   phase: LaunchPhase,
-  guidance?: GuidanceEntry
-): Promise<NonNullable<LaunchPhase['scripts']>> {
+  guidance?: GuidanceEntry,
+  durationMinutes: number = DEFAULT_SCRIPT_DURATION_MINUTES
+): Promise<string> {
+  const estimatedWordCount = Math.round(durationMinutes * ESTIMATED_WORDS_PER_MINUTE);
   const prompt = `
-    Atue como um especialista em Fórmula de Lançamento (Erico Rocha).
-    Gere os ROTEIROS e CRIATIVOS detalhados para a fase "${phase.name}" do lançamento do produto "${data.productName}".
-    
-    Contexto do Produto:
-    Público: ${data.targetAudience}
-    Avatar (apelido interno): ${data.avatarName}
-    Promessa: ${data.mainBenefit}
-    Modelo: ${launchModelLabel(data.launchModel)}
-    Dores prioritárias: ${data.avatarPainPoints}
-    Objeções declaradas: ${data.avatarObjections}
-    Visão de futuro desejada: ${data.avatarDesiredState}
-    Diretriz para o CPL 3 / solução âncora: ${data.cplThreeSolution}
-    
-    OFERTA DETALHADA:
-    Preço: ${data.price}
-    Âncora: ${data.anchorPrice || 'Não informado'}
-    Bônus: ${data.bonuses}
-    Garantia: ${data.guarantee}
-    Pagamento: ${data.paymentMethods}
-    Escassez: ${data.scarcity}
+    Você é copywriter sênior da Fórmula de Lançamento.
+    Escreva UM ÚNICO ROTEIRO LONGO para a fase "${phase.name}" do produto "${data.productName}".
 
-    Descrição da Fase: ${phase.description}
+    Objetivo: produzir o texto completo que será lido em uma live (tom de conversa guiada, ritmo natural, transições claras).
+    Não crie listas de entregáveis, emails, anúncios ou posts isolados. Gera um único texto contínuo.
 
-    Instruções personalizadas do estrategista:
-    Pontos importantes: ${guidance?.keyPoints || 'Não informado'}
-    Estrutura/Gatilhos: ${guidance?.framework || 'Não informado'}
+    Contexto:
+    - Público: ${data.targetAudience}
+    - Avatar: ${data.avatarName}
+    - Promessa: ${data.mainBenefit}
+    - Modelo de CPL 1: ${launchModelLabel(data.launchModel)}
+    - Dores prioritárias: ${data.avatarPainPoints}
+    - Objeções declaradas: ${data.avatarObjections}
+    - Estado desejado: ${data.avatarDesiredState}
+    - Demonstração do CPL3: ${data.cplThreeSolution}
+    - Oferta: ${data.price} (âncora ${data.anchorPrice || 'não informada'}), bônus ${data.bonuses}, garantia ${data.guarantee}, pagamento ${data.paymentMethods}, escassez ${data.scarcity}
 
-    Para esta fase específica, gere:
-    - Roteiros de vídeos (incluindo roteiro para HeyGen/Avatar IA se aplicável).
-    - Modelos de emails persuasivos.
-    - Sugestões de criativos (anúncios) com ideias visuais.
-    - Posts para redes sociais.
+    Diretrizes personalizadas do estrategista para esta fase:
+    - Pontos essenciais: ${guidance?.keyPoints || 'não informado'}
+    - Estrutura / gatilhos: ${guidance?.framework || 'não informado'}
 
-    Use gatilhos mentais apropriados para esta fase.
-    Retorne a resposta estritamente no formato JSON solicitado.
+    Descrição oficial da fase: ${phase.description}
+
+    Tempo orientado:
+    - Produza um roteiro que preencha cerca de ${durationMinutes} minutos de apresentação ao vivo.
+    - Utilize esse tempo para conduzir a audiência com fluidez, considerando um ritmo aproximado de ${ESTIMATED_WORDS_PER_MINUTE} palavras por minuto (aprox. ${estimatedWordCount} palavras no total).
+
+    Formato do resultado:
+    - Texto único, sem tópicos ou marcadores.
+    - Inclua aberturas, storytelling, quebras de padrão, prova, oferta e CTA seguindo a estrutura indicada.
+    - Utilize subtítulos curtos SOMENTE se a própria estrutura exigir (ex.: "Bloco 1 - Quebra de padrão"), caso contrário mantenha parágrafos.
+    - Linguagem em português brasileiro, voz consultiva e energia de live.
+    - Sempre que citar diretamente os "Pontos essenciais" ou a "Estrutura / gatilhos" fornecidos, envolva esse trecho com <span style="color:#2563eb;font-weight:600">…</span> para destacá-lo em azul.
+    - Após concluir o roteiro, adicione um bloco intitulado "## Gatilhos utilizados" contendo uma lista dos gatilhos realmente aplicados. Cada gatilho deve estar dentro de <span style="color:#7c3aed;font-weight:600">Nome do gatilho</span> seguido de uma breve explicação.
+    - Distribua o conteúdo para ocupar os ${durationMinutes} minutos solicitados, evitando acelerar demais o ritmo ou encurtar blocos importantes.
   `;
 
   const response = await getAiClient().models.generateContent({
     model: "gemini-3-flash-preview",
     contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          scripts: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                content: { type: Type.STRING },
-                type: { type: Type.STRING, enum: ['video', 'email', 'ad', 'social', 'heygen'] }
-              },
-              required: ['title', 'content', 'type']
-            }
-          }
-        },
-        required: ['scripts']
-      }
-    }
   });
 
-  const result = JSON.parse(response.text || '{"scripts": []}');
-  return result.scripts;
+  return response.text?.trim() ?? '';
 }
 
 export async function generateGuidedFieldCopy(
@@ -203,4 +184,81 @@ export async function generateGuidedFieldCopy(
   });
 
   return response.text?.trim() ?? '';
+}
+
+export async function generatePhaseTasks(
+  data: LaunchData,
+  phase: LaunchPhase,
+  guidance?: GuidanceEntry
+): Promise<PhaseTask[]> {
+  const prompt = `
+    Voce e especialista em Formula de Lancamento.
+    Crie um checklist operacional para a fase "${phase.name}".
+
+    Contexto:
+    - Produto: ${data.productName}
+    - Nicho: ${data.niche}
+    - Publico: ${data.targetAudience}
+    - Data oficial de lancamento: ${data.launchDate || 'nao informada'}
+    - Modelo: ${launchModelLabel(data.launchModel)}
+    - Oferta: preco ${data.price}, bonus ${data.bonuses}, garantia ${data.guarantee}
+    - Dor principal: ${data.mainProblem}
+    - Beneficio principal: ${data.mainBenefit}
+    - Objeções: ${data.avatarObjections}
+
+    Diretrizes extras:
+    - Pontos importantes: ${guidance?.keyPoints || 'nao informado'}
+    - Estrutura/gatilhos: ${guidance?.framework || 'nao informado'}
+    - Descricao da fase: ${phase.description}
+
+    Regras:
+    - Retorne de 8 a 12 tarefas.
+    - Tarefas curtas, praticas e acionaveis.
+    - Cada tarefa deve ter:
+      1) id (slug curto sem espacos),
+      2) title (maximo 90 caracteres),
+      3) details (1 a 2 frases objetivas),
+      4) dueOffsetDays (inteiro relativo ao marco da fase, ex: -2, 0, +1).
+    - Nao incluir markdown.
+    - Nao incluir campos extras.
+  `;
+
+  const response = await getAiClient().models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          tasks: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                title: { type: Type.STRING },
+                details: { type: Type.STRING },
+                dueOffsetDays: { type: Type.NUMBER },
+              },
+              required: ['id', 'title', 'details']
+            }
+          }
+        },
+        required: ['tasks']
+      }
+    }
+  });
+
+  const parsed = JSON.parse(response.text || '{"tasks": []}') as {
+    tasks?: Array<{ id: string; title: string; details: string; dueOffsetDays?: number }>;
+  };
+
+  return (parsed.tasks ?? []).map((task, index) => ({
+    id: (task.id || `task-${index + 1}`).toString().trim() || `task-${index + 1}`,
+    title: task.title?.toString().trim() || `Tarefa ${index + 1}`,
+    details: task.details?.toString().trim() || 'Executar etapa operacional desta fase.',
+    dueOffsetDays: Number.isFinite(task.dueOffsetDays) ? Number(task.dueOffsetDays) : undefined,
+    done: false,
+  }));
 }

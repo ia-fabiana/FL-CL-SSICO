@@ -25,12 +25,12 @@ export interface LaunchPhase {
   id: string;
   name: string;
   description: string;
-  scripts?: {
-    title: string;
-    content: string;
-    type: 'video' | 'email' | 'ad' | 'social' | 'heygen';
-  }[];
+  liveScript?: string;
+  liveScriptUpdatedAt?: string;
+  liveScriptDurationMinutes?: number;
   isGenerating?: boolean;
+  tasks?: PhaseTask[];
+  isGeneratingTasks?: boolean;
 }
 
 export interface LaunchPlan {
@@ -40,6 +40,24 @@ export interface LaunchPlan {
   snaStrategy: string;
   insiderDeliverablesMap: string;
   structure: LaunchPhase[];
+}
+
+export interface StoredPhaseContent {
+  liveScript?: string;
+  updatedAt?: string;
+  durationMinutes?: number;
+  tasks?: PhaseTask[];
+}
+
+export type PhaseContentMap = Record<string, StoredPhaseContent>;
+
+export interface PhaseTask {
+  id: string;
+  title: string;
+  details: string;
+  dueOffsetDays?: number;
+  done: boolean;
+  doneAt?: string;
 }
 
 export interface GuidanceEntry {
@@ -94,6 +112,7 @@ export interface ChecklistData {
 export interface StoredBriefing extends LaunchData {
   checklist: ChecklistData;
   guidance?: GuidanceMap;
+  phaseContent?: PhaseContentMap;
   createdAt?: unknown;
   updatedAt?: unknown;
 }

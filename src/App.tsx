@@ -4,12 +4,12 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChecklistData, GuidanceEntry, GuidanceMap, LaunchData, LaunchPlan, LaunchPhase, StoredBriefing } from './types';
+import { ChecklistData, GuidanceEntry, GuidanceMap, LaunchData, LaunchPlan, LaunchPhase, PhaseContentMap, StoredBriefing } from './types';
 import { generateGuidedFieldCopy, generatePhaseDetails } from './services/gemini';
 import LaunchForm from './components/LaunchForm';
-import LaunchResult from './components/LaunchResult';
 import { Sparkles, BookOpen, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
+import ReactMarkdown from 'react-markdown';
 import { PublikaShowcase } from './components/PublikaShowcase';
 import { PublikaEditor } from './components/PublikaEditor';
 import { db } from './firebase';
@@ -28,6 +28,7 @@ import {
 import { createInitialChecklist, mergeChecklist } from './checklist';
 import { PUBLIKA_MODULES, PUBLIKA_SUMMARY, PublikaModule, PublikaSummary } from './publika';
 import {
+  applyPhaseGuidanceDefaults,
   collectFieldKeys,
   collectPhaseKeys,
   createEmptyGuidanceEntry,
@@ -37,6 +38,7 @@ import {
   GuidedFieldKey,
 } from './guidance';
 import { DEFAULT_PLAN } from './planDefaults';
+import { DEFAULT_SCRIPT_DURATION_MINUTES } from './constants';
 
 const EMPTY_LAUNCH_DATA: LaunchData = {
   avatarName: '',
@@ -103,6 +105,7 @@ const FIELD_GUIDANCE_PREFIX = 'field:';
 const PHASE_GUIDANCE_PREFIX = 'phase:';
 
 const TIMELINE_PHASE_ORDER = ['PPL', 'CPL1', 'CPL2', 'CPL3', 'L1', 'L2', 'L3'];
+const SCRIPT_DURATION_OPTIONS = [15, 20, 25, 30, 35, 40, 45, 60];
 
 type NavItem = {
   id: string;
@@ -125,7 +128,6 @@ const createDefaultPlan = (): LaunchPlan => ({
 export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [plan, setPlan] = useState<LaunchPlan>(() => createDefaultPlan());
-  const isDefaultPlan = true;
   const [launchData, setLaunchData] = useState<LaunchData | null>(INITIAL_BRIEFING);
   const [error, setError] = useState<string | null>(null);
   const [briefingId, setBriefingId] = useState<string | null>(null);
@@ -138,8 +140,39 @@ export default function App() {
   const [publikaSummary, setPublikaSummary] = useState<PublikaSummary>(PUBLIKA_SUMMARY);
   const [publikaModules, setPublikaModules] = useState<PublikaModule[]>(PUBLIKA_MODULES);
   const [activeDiagnosticSection, setActiveDiagnosticSection] = useState<string>('section-launch-date');
-  const [focusedPhaseId, setFocusedPhaseId] = useState<string | null>(null);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+  const [scriptDurationMinutes, setScriptDurationMinutes] = useState<number>(DEFAULT_SCRIPT_DURATION_MINUTES);
   const briefingPanelRef = useRef<HTMLDivElement | null>(null);
+  const serializePhaseContent = (structure: LaunchPhase[]): PhaseContentMap =>
+    structure.reduce<PhaseContentMap>((acc, phase) => {
+      if (phase.liveScript) {
+        acc[phase.id] = {
+          liveScript: phase.liveScript,
+          updatedAt: phase.liveScriptUpdatedAt ?? new Date().toISOString(),
+          durationMinutes: phase.liveScriptDurationMinutes,
+        };
+      }
+      return acc;
+    }, {});
+  const applyStoredPhaseContent = useCallback((phaseContent?: PhaseContentMap) => {
+    if (!phaseContent) {
+      return;
+    }
+
+    setPlan(prevPlan => ({
+      ...prevPlan,
+      structure: prevPlan.structure.map(phase => {
+        const stored = phaseContent[phase.id];
+        if (!stored) return phase;
+        return {
+          ...phase,
+          liveScript: stored.liveScript ?? phase.liveScript,
+          liveScriptUpdatedAt: stored.updatedAt ?? phase.liveScriptUpdatedAt,
+          liveScriptDurationMinutes: stored.durationMinutes ?? phase.liveScriptDurationMinutes,
+        };
+      }),
+    }));
+  }, [setPlan]);
   const getAllGuidanceKeys = useCallback(
     () => [
       ...collectFieldKeys(),
@@ -161,6 +194,14 @@ export default function App() {
     });
   };
 
+  const handleScriptDurationSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextValue = Number(event.target.value);
+    if (Number.isNaN(nextValue)) {
+      return;
+    }
+    setScriptDurationMinutes(nextValue);
+  };
+
   const generatePhaseWithGuidance = async (phaseId: string, customGuidance?: GuidanceEntry) => {
     if (!launchData) {
       setError('Preencha e salve o diagnóstico antes de gerar esta fase.');
@@ -175,13 +216,19 @@ export default function App() {
     updatePhaseStructure(phaseId, { isGenerating: true });
 
     try {
-      const scripts = await generatePhaseDetails(
+      const liveScript = await generatePhaseDetails(
         launchData,
         phaseDefinition,
-        customGuidance ?? guidance[guidanceKeyForPhase(phaseId)]
+        customGuidance ?? guidance[guidanceKeyForPhase(phaseId)],
+        scriptDurationMinutes
       );
 
-      updatePhaseStructure(phaseId, { scripts, isGenerating: false });
+      updatePhaseStructure(phaseId, {
+        liveScript,
+        liveScriptUpdatedAt: new Date().toISOString(),
+        liveScriptDurationMinutes: scriptDurationMinutes,
+        isGenerating: false,
+      });
     } catch (err) {
       console.error(err);
       setError('Erro ao gerar detalhes da fase. Tente novamente.');
@@ -242,26 +289,29 @@ export default function App() {
       { id: 'section-timeline-overview', label: 'Linha do tempo' },
     ];
 
-    let orderCounter = 0;
-    const phaseItems: NavItem[] = plan.structure
-      .filter(phase => PHASE_MENU_LABELS[phase.id])
-      .map(phase => {
-        orderCounter += 1;
-        return {
-          id: `phase-${phase.id.toLowerCase()}`,
-          label: PHASE_MENU_LABELS[phase.id],
-          helper: phaseDates[phase.id],
-          phaseId: phase.id,
-          description: phase.description,
-          order: orderCounter,
-        };
-      });
+    const phaseItems: NavItem[] = plan.structure.map(phase => ({
+      id: `phase-${phase.id.toLowerCase()}`,
+      label: PHASE_MENU_LABELS[phase.id] ?? phase.name,
+      helper: phaseDates[phase.id],
+      phaseId: phase.id,
+      description: phase.description,
+    }));
 
-    return [
-      ...staticItems,
-      ...phaseItems,
-    ];
+    return [...staticItems, ...phaseItems];
   }, [phaseDates, plan.structure]);
+
+  const selectedPhase = useMemo(
+    () => plan.structure.find(phase => phase.id === selectedPhaseId) ?? null,
+    [plan.structure, selectedPhaseId]
+  );
+  const selectedPhaseGuidanceKey = selectedPhase ? guidanceKeyForPhase(selectedPhase.id) : null;
+  const selectedPhaseGuidance = selectedPhaseGuidanceKey ? guidance[selectedPhaseGuidanceKey] : undefined;
+  const selectedPhaseGuidanceStatus = selectedPhaseGuidanceKey
+    ? {
+        saving: guidanceSaving[selectedPhaseGuidanceKey] ?? false,
+        processing: guidanceProcessing[selectedPhaseGuidanceKey] ?? false,
+      }
+    : { saving: false, processing: false };
 
   useEffect(() => {
     const fetchLatestBriefing = async () => {
@@ -280,7 +330,14 @@ export default function App() {
 
         const docSnapshot = snapshot.docs[0];
         const data = docSnapshot.data() as StoredBriefing;
-        const { checklist: storedChecklist, guidance: storedGuidance, createdAt, updatedAt, ...launchFields } = data;
+        const {
+          checklist: storedChecklist,
+          guidance: storedGuidance,
+          phaseContent: storedPhaseContent,
+          createdAt,
+          updatedAt,
+          ...launchFields
+        } = data;
 
         setBriefingId(docSnapshot.id);
         setChecklist(mergeChecklist(storedChecklist));
@@ -292,7 +349,13 @@ export default function App() {
           ...collectFieldKeys(),
           ...collectPhaseKeys(plan.structure.map(phase => phase.id)),
         ];
-        setGuidance(prev => ensureGuidanceKeys(storedGuidance ?? prev, allKeys));
+        setGuidance(prev => {
+          const base = storedGuidance ?? prev;
+          let next = ensureGuidanceKeys(base, allKeys);
+          next = applyPhaseGuidanceDefaults(next, plan.structure.map(phase => phase.id));
+          return next;
+        });
+        applyStoredPhaseContent(storedPhaseContent);
       } catch (fetchError) {
         console.error('Erro ao carregar briefing anterior', fetchError);
       }
@@ -302,14 +365,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    setGuidance(prev => ensureGuidanceKeys(prev, getAllGuidanceKeys()));
-  }, [getAllGuidanceKeys]);
+    setGuidance(prev => {
+      let next = ensureGuidanceKeys(prev, getAllGuidanceKeys());
+      next = applyPhaseGuidanceDefaults(next, plan.structure.map(phase => phase.id));
+      return next;
+    });
+  }, [getAllGuidanceKeys, plan.structure]);
 
   useEffect(() => {
-    if (!focusedPhaseId && plan.structure.length) {
-      setFocusedPhaseId(plan.structure[0].id);
+    if (!selectedPhaseId && plan.structure.length) {
+      setSelectedPhaseId(plan.structure[0].id);
     }
-  }, [plan.structure, focusedPhaseId]);
+  }, [plan.structure, selectedPhaseId]);
 
   const persistBriefing = async (data: LaunchData) => {
     const normalizedChecklist = mergeChecklist(checklist);
@@ -319,6 +386,7 @@ export default function App() {
       ...data,
       checklist: normalizedChecklist,
       guidance,
+      phaseContent: serializePhaseContent(plan.structure),
       updatedAt: serverTimestamp(),
     };
 
@@ -354,10 +422,6 @@ export default function App() {
     }
   };
 
-  const handleGeneratePhase = async (phaseId: string) => {
-    await generatePhaseWithGuidance(phaseId);
-  };
-
   const updateGuidanceValue = (key: string, field: keyof GuidanceEntry, value: string) => {
     setGuidance(prev => ({
       ...prev,
@@ -374,13 +438,22 @@ export default function App() {
     const updatedGuidance = { ...guidance, [key]: stamped };
     setGuidance(updatedGuidance);
 
-    if (!briefingId) {
-      return;
-    }
+    setGuidanceSaving(prev => ({ ...prev, [key]: true }));
 
     try {
-      setGuidanceSaving(prev => ({ ...prev, [key]: true }));
-      await updateDoc(doc(db, 'launchBriefings', briefingId), {
+      let ensuredBriefingId = briefingId;
+
+      if (!ensuredBriefingId) {
+        const baseData = normalizeLaunchData(launchData ?? formDefaults ?? INITIAL_BRIEFING);
+        ensuredBriefingId = await persistBriefing(baseData);
+        setBriefingId(ensuredBriefingId);
+      }
+
+      if (!ensuredBriefingId) {
+        throw new Error('Não foi possível criar o briefing para salvar as instruções.');
+      }
+
+      await updateDoc(doc(db, 'launchBriefings', ensuredBriefingId), {
         guidance: updatedGuidance,
         updatedAt: serverTimestamp(),
       });
@@ -438,7 +511,13 @@ export default function App() {
     if (typeof window === 'undefined') return;
 
     if (targetId.startsWith('phase-')) {
-      setFocusedPhaseId(targetId.replace('phase-', '').toUpperCase());
+      const phaseId = targetId.replace('phase-', '').toUpperCase();
+      setSelectedPhaseId(phaseId);
+      setTimeout(() => {
+        const workspace = document.getElementById('phase-workspace');
+        workspace?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      return;
     }
 
     const element = document.getElementById(targetId);
@@ -597,6 +676,17 @@ export default function App() {
             Transforme seu conhecimento em um império digital. Gere toda a estrutura do seu 
             <strong> Lançamento Clássico</strong> em segundos.
           </motion.p>
+          <motion.a
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
+            href="/uploads/checklist-classico-perfeito.xlsx"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center justify-center rounded-full border border-indigo-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
+          >
+            Baixar Checklist Classico
+          </motion.a>
         </header>
 
         <div className="mt-12 flex flex-col gap-8 lg:flex-row">
@@ -667,29 +757,110 @@ export default function App() {
               {briefingPanel}
             </section>
 
-            <section className="space-y-6">
+            <section id="phase-workspace" className="space-y-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.4em] text-indigo-500/80">Fases</p>
-                <h2 className="text-3xl font-black text-slate-900">Categorias do lançamento</h2>
-                <p className="text-sm text-slate-500 mt-1">Visualize todas as fases agora e gere os roteiros completos quando desejar.</p>
+                <h2 className="text-3xl font-black text-slate-900">Central de comandos</h2>
+                <p className="text-sm text-slate-500 mt-1">Selecione uma fase no menu lateral, defina instruções e gere os roteiros abaixo.</p>
               </div>
 
-              <LaunchResult
-                plan={plan}
-                onGeneratePhase={handleGeneratePhase}
-                canGeneratePhase={Boolean(launchData)}
-                isDefaultPlan={isDefaultPlan}
-                pendingAvatarStory={avatarStoryDraft}
-                phaseDates={phaseDates}
-                requestedPhaseId={focusedPhaseId}
-                onPhaseRequestHandled={() => setFocusedPhaseId(null)}
-                guidance={guidance}
-                guidanceSaving={guidanceSaving}
-                guidanceProcessing={guidanceProcessing}
-                onGuidanceChange={updateGuidanceValue}
-                onSaveGuidance={handleSaveGuidanceEntry}
-                onProcessGuidance={handleProcessGuidanceEntry}
-              />
+              {selectedPhase ? (
+                <div className="space-y-6 rounded-3xl border border-slate-200 bg-white/95 p-8 shadow-sm">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-indigo-400">{PHASE_MENU_LABELS[selectedPhase.id] ?? selectedPhase.id}</p>
+                      <h3 className="text-2xl font-black text-slate-900">{selectedPhase.name}</h3>
+                      <p className="text-sm text-slate-500 mt-1">{selectedPhase.description}</p>
+                      {phaseDates[selectedPhase.id] && (
+                        <p className="text-xs font-semibold text-indigo-500 mt-2">{phaseDates[selectedPhase.id]}</p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => selectedPhase && generatePhaseWithGuidance(selectedPhase.id)}
+                      disabled={selectedPhase.isGenerating || !launchData}
+                      className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-black uppercase tracking-[0.3em] text-white hover:bg-slate-800 disabled:opacity-60"
+                    >
+                      {selectedPhase.isGenerating ? 'Gerando...' : 'Gerar texto da live'}
+                    </button>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <label className="space-y-2 text-sm text-slate-600">
+                      <span className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Pontos importantes</span>
+                      <textarea
+                        rows={4}
+                        value={selectedPhaseGuidance?.keyPoints ?? ''}
+                        onChange={event => selectedPhaseGuidanceKey && updateGuidanceValue(selectedPhaseGuidanceKey, 'keyPoints', event.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-400"
+                      />
+                    </label>
+                    <label className="space-y-2 text-sm text-slate-600">
+                      <span className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Estrutura / gatilhos</span>
+                      <textarea
+                        rows={4}
+                        value={selectedPhaseGuidance?.framework ?? ''}
+                        onChange={event => selectedPhaseGuidanceKey && updateGuidanceValue(selectedPhaseGuidanceKey, 'framework', event.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-400"
+                      />
+                    </label>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      disabled={!selectedPhaseGuidanceKey || selectedPhaseGuidanceStatus.saving}
+                      onClick={() => selectedPhaseGuidanceKey && handleSaveGuidanceEntry(selectedPhaseGuidanceKey)}
+                      className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-5 py-2 text-xs font-black uppercase tracking-[0.3em] text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-60"
+                    >
+                      {selectedPhaseGuidanceStatus.saving ? 'Salvando...' : 'Salvar instruções'}
+                    </button>
+                  </div>
+
+                  <div className="rounded-3xl border border-indigo-100 bg-indigo-50/80 p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-indigo-500">Aviso de duração</p>
+                      <p className="text-sm font-semibold text-indigo-900">Cada novo roteiro deve durar cerca de {scriptDurationMinutes} minutos.</p>
+                      <p className="text-xs text-indigo-700 mt-1">Este box acompanha todas as gerações para garantir o tempo solicitado.</p>
+                    </div>
+                    <label className="text-sm font-semibold text-indigo-900 flex flex-col gap-1">
+                      <span className="text-xs font-bold tracking-[0.3em] text-indigo-500">Tempo desejado</span>
+                      <select
+                        value={scriptDurationMinutes}
+                        onChange={handleScriptDurationSelect}
+                        className="rounded-2xl border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-900 focus:ring-2 focus:ring-indigo-400"
+                      >
+                        {SCRIPT_DURATION_OPTIONS.map(option => (
+                          <option key={option} value={option}>
+                            {option} minutos
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Script completo para live</p>
+                    {selectedPhase.liveScript ? (
+                      <div className="space-y-4">
+                        <div className="rounded-3xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600">
+                          Tempo solicitado: aproximadamente {selectedPhase.liveScriptDurationMinutes ?? scriptDurationMinutes} minutos.
+                        </div>
+                        <div
+                          className="prose prose-slate max-w-none rounded-3xl border border-slate-100 bg-slate-50 p-6 text-sm leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: selectedPhase.liveScript }}
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">Nenhum roteiro gerado ainda. Use os botões acima para criar sua primeira versão.</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+                  Clique em uma fase na navegação lateral para liberar este painel.
+                </div>
+              )}
             </section>
 
             {error && (

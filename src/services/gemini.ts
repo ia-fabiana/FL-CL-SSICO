@@ -1,6 +1,6 @@
 ﻿import { GoogleGenAI, Type } from "@google/genai";
 import { GuidedFieldKey, getFieldPrompt, getLaunchDataSnapshot } from "../guidance";
-import { GuidanceEntry, LaunchData, LaunchPlan, LaunchPhase, PhaseTask, TaskContentMode } from "../types";
+import { AudienceImageSpec, GuidanceEntry, LaunchData, LaunchPlan, LaunchPhase, PhaseTask, TaskContentMode } from "../types";
 import { DEFAULT_SCRIPT_DURATION_MINUTES, ESTIMATED_WORDS_PER_MINUTE } from "../constants";
 const launchModelLabel = (model: LaunchData['launchModel']): string => {
   return model === 'opportunity'
@@ -661,6 +661,81 @@ export async function generateTaskContentDraft(
     - Seja objetivo, pratico e focado em conversao.
     - Nao use markdown.
   `;
+
+  const response = await getAiClient().models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+
+  return response.text?.trim() ?? '';
+}
+
+// ─── Criação de Audiência: geração de conteúdo por sub-tarefa ──────────────
+
+export async function generateAudienceSubTaskContent(
+  data: LaunchData,
+  subTaskTitle: string,
+  contentMode: 'text' | 'image' | 'both',
+  imageSpec?: AudienceImageSpec,
+  expertPhotoRequired?: boolean
+): Promise<string> {
+  const wantsImage = contentMode === 'image' || contentMode === 'both';
+  const wantsText = contentMode === 'text' || contentMode === 'both';
+
+  const imageBlock = wantsImage && imageSpec
+    ? `
+BRIEFING DA IMAGEM:
+Formato: ${imageSpec.label} ${imageSpec.ratio} — ${imageSpec.width}×${imageSpec.height} px
+${expertPhotoRequired ? 'DETALHE CRÍTICO: A foto real da expert deve ser o elemento visual principal (ocupe pelo menos 60% da área central).' : ''}
+Descreva:
+1. Conceito criativo e objetivos da imagem
+2. Posicionamento${expertPhotoRequired ? ' da foto da expert' : ' do elemento central'}
+3. Textos na arte (título, subtítulo, CTA visual)
+4. Paleta de cores sugerida e estilo visual
+5. Elementos extras (ícones, fundos, overlays)
+6. Prompt pronto para geração no Canva ou IA de imagem
+`
+    : '';
+
+  const textBlock = wantsText
+    ? `
+LEGENDA (CAPTION) PARA O POST:
+- Hook de abertura forte (1–2 linhas que param o scroll)
+- Apresentação: quem é, o que faz, para quem, qual a transformação entregue
+- Prova ou gatilho de autoridade
+- CTA claro (ex: "Salve este post", "Comenta aqui", "Link na bio")
+- Hashtags relevantes ao nicho (8–12 hashtags no final)
+`
+    : '';
+
+  const expertKnowledgeBase = `
+Historia e posicionamento da expert: ${data.avatarStory || 'nao informado'}
+Nicho de atuacao: ${data.niche || 'nao informado'}
+Publico que ela atende: ${data.targetAudience || 'nao informado'}
+Problema que ela resolve: ${data.mainProblem || 'nao informado'}
+Transformacao / ROMA que ela entrega: ${data.mainBenefit || 'nao informado'}
+Produto / metodo: ${data.productName || 'nao informado'}
+`.trim();
+
+  const prompt = `
+Voce e copywriter senior especialista em Instagram e Formula de Lancamento.
+Gere o conteudo para a seguinte tarefa de criacao de audiencia.
+
+BASE DE CONHECIMENTO DA EXPERT (use isto como fonte principal):
+${expertKnowledgeBase}
+
+TAREFA: ${subTaskTitle}
+${imageBlock}
+${textBlock}
+
+REGRAS FINAIS:
+- O conteudo deve apresentar a EXPERT, nao o avatar/cliente.
+- Use os dados da historia, nicho, publico, problema e ROMA da expert para construir autoridade e identificacao.
+- Linguagem em portugues brasileiro, tom de autoridade, calor humano e energia.
+- Seja especifico ao nicho e ao perfil da expert.
+- Nao use markdown.
+${wantsImage && wantsText ? '- Separe cada secao com uma linha "---".' : ''}
+  `.trim();
 
   const response = await getAiClient().models.generateContent({
     model: "gemini-3-flash-preview",

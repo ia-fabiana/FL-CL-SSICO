@@ -183,7 +183,14 @@ const DEFAULT_AUDIENCE_DAYS: AudienceDay[] = [
           { id: 'ig-01', title: 'Atualizar os stories em destaque (covers e conteúdo)', done: false },
           { id: 'ig-02', title: 'Revisar a bio: cargo, promessa, palavra-chave e link', done: false },
           { id: 'ig-03', title: 'Conferir o link na bio (criar ou ajustar Linktree/página)', done: false },
-          { id: 'ig-04', title: 'Criar ou atualizar o post fixado apresentando o trabalho', done: false },
+          {
+            id: 'ig-04',
+            title: 'Criar ou atualizar o post fixado apresentando o trabalho',
+            done: false,
+            contentMode: 'both',
+            imageSpec: { label: 'Post para Instagram', ratio: '4:5', width: 1080, height: 1350 },
+            expertPhotoRequired: true,
+          },
           { id: 'ig-05', title: 'Revisar os últimos posts para verificar alinhamento com o avatar', done: false },
           { id: 'ig-06', title: 'Definir a pauta dos primeiros posts do período de criação de audiência', done: false },
           // Facebook
@@ -1572,6 +1579,36 @@ export default function App() {
       }
     : { saving: false, processing: false };
 
+  const loadRootScriptVersions = useCallback(async (targetBriefingId: string) => {
+    const versionsSnapshot = await getDocs(
+      query(
+        collection(db, 'launchBriefings', targetBriefingId, 'rootScripts'),
+        orderBy('createdAt', 'desc'),
+        limit(80)
+      )
+    );
+
+    const nextVersions: RootScriptVersion[] = versionsSnapshot.docs.map(versionDoc => {
+      const data = versionDoc.data() as Omit<RootScriptVersion, 'id'>;
+      return {
+        id: versionDoc.id,
+        title: data.title || `Roteiro ${versionDoc.id.slice(0, 6)}`,
+        content: data.content || '',
+        status: data.status || 'review',
+        approved: Boolean(data.approved),
+        headlines: Array.isArray(data.headlines) ? data.headlines : [],
+        durationMinutes: typeof data.durationMinutes === 'number' ? data.durationMinutes : DEFAULT_SCRIPT_DURATION_MINUTES,
+        themeTitles: Array.isArray(data.themeTitles) ? data.themeTitles : [],
+        editorialLineTitles: Array.isArray(data.editorialLineTitles) ? data.editorialLineTitles : [],
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        createdAtClient: data.createdAtClient,
+      };
+    });
+
+    setRootScriptVersions(nextVersions);
+  }, []);
+
   useEffect(() => {
     const fetchLatestBriefing = async () => {
       try {
@@ -1811,36 +1848,6 @@ export default function App() {
     setBriefingId(createdId);
     return createdId;
   };
-
-  async function loadRootScriptVersions(targetBriefingId: string) {
-    const versionsSnapshot = await getDocs(
-      query(
-        collection(db, 'launchBriefings', targetBriefingId, 'rootScripts'),
-        orderBy('createdAt', 'desc'),
-        limit(80)
-      )
-    );
-
-    const nextVersions: RootScriptVersion[] = versionsSnapshot.docs.map(versionDoc => {
-      const data = versionDoc.data() as Omit<RootScriptVersion, 'id'>;
-      return {
-        id: versionDoc.id,
-        title: data.title || `Roteiro ${versionDoc.id.slice(0, 6)}`,
-        content: data.content || '',
-        status: data.status || 'review',
-        approved: Boolean(data.approved),
-        headlines: Array.isArray(data.headlines) ? data.headlines : [],
-        durationMinutes: typeof data.durationMinutes === 'number' ? data.durationMinutes : DEFAULT_SCRIPT_DURATION_MINUTES,
-        themeTitles: Array.isArray(data.themeTitles) ? data.themeTitles : [],
-        editorialLineTitles: Array.isArray(data.editorialLineTitles) ? data.editorialLineTitles : [],
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-        createdAtClient: data.createdAtClient,
-      };
-    });
-
-    setRootScriptVersions(nextVersions);
-  }
 
   const persistRootScriptVersion = useCallback(
     async (params: {
@@ -4040,6 +4047,7 @@ export default function App() {
 
               <AudienceCreationPanel
                 days={audienceDays}
+                launchData={launchData}
                 onChange={days => {
                   setAudienceDays(days);
                   persistAudienceDays(days).catch(console.error);

@@ -178,11 +178,24 @@ export interface RootScriptVersion {
 
 export type AudiencePlatform = 'instagram' | 'facebook' | 'youtube' | 'geral';
 
+export interface AudienceImageSpec {
+  label: string;
+  ratio: string;
+  width: number;
+  height: number;
+}
+
 export interface AudienceSubTask {
   id: string;
   title: string;
   done: boolean;
   doneAt?: string;
+  /** 'text' = só legenda | 'image' = só briefing de imagem | 'both' = legenda + briefing */
+  contentMode?: 'text' | 'image' | 'both';
+  contentDraft?: string;
+  contentSavedAt?: string;
+  imageSpec?: AudienceImageSpec;
+  expertPhotoRequired?: boolean;
 }
 
 export interface AudienceTask {

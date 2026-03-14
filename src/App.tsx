@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from 'jspdf';
-import { AudienceDay, ChecklistData, GuidanceEntry, GuidanceMap, LaunchData, LaunchPlan, LaunchPhase, LaunchType, PhaseContentMap, PhaseTask, StoredBriefing, TaskProof } from './types';
+import { AudienceDay, ChecklistData, GuidanceEntry, GuidanceMap, LaunchData, LaunchPlan, LaunchPhase, LaunchType, PhaseContentMap, PhaseTask, RootScriptVersion, RootScriptVersionStatus, StoredBriefing, TaskProof } from './types';
 import { generateGuidedFieldCopy, generatePhaseDetails, generateRootHeadlines, generateRootScript, generateTaskContentDraft } from './services/gemini';
 import LaunchForm from './components/LaunchForm';
 import AudienceCreationPanel from './components/AudienceCreationPanel';
@@ -845,6 +845,24 @@ const QUESTION_SECTION_DEFAULT_STYLE = {
 
 const ROOT_SCRIPT_DURATION_OPTIONS = [30, 45, 60];
 
+const ROOT_SCRIPT_SCRUMBAN_COLUMNS: Array<{
+  key: RootScriptVersionStatus;
+  label: string;
+  className: string;
+}> = [
+  { key: 'idea', label: 'Ideia / Rascunho', className: 'border-slate-200 bg-slate-50/70' },
+  { key: 'review', label: 'Em revisao', className: 'border-amber-200 bg-amber-50/70' },
+  { key: 'approved', label: 'Aprovado', className: 'border-emerald-200 bg-emerald-50/70' },
+  { key: 'published', label: 'Publicado', className: 'border-sky-200 bg-sky-50/70' },
+];
+
+const ROOT_SCRIPT_STATUS_LABELS: Record<RootScriptVersionStatus, string> = {
+  idea: 'Ideia / Rascunho',
+  review: 'Em revisao',
+  approved: 'Aprovado',
+  published: 'Publicado',
+};
+
 const normalizeThemeLine = (line: string) =>
   line
     .replace(/^#{1,6}\s*/, '')
@@ -1034,6 +1052,8 @@ export default function App() {
   const [rootScriptDurationMinutes, setRootScriptDurationMinutes] = useState<number>(DEFAULT_SCRIPT_DURATION_MINUTES);
   const [rootScriptDraft, setRootScriptDraft] = useState('');
   const [rootScriptApproved, setRootScriptApproved] = useState(false);
+  const [rootScriptVersions, setRootScriptVersions] = useState<RootScriptVersion[]>([]);
+  const [currentRootScriptVersionId, setCurrentRootScriptVersionId] = useState<string | null>(null);
   const [isEditingRootScript, setIsEditingRootScript] = useState(false);
   const [isSavingRootScript, setIsSavingRootScript] = useState(false);
   const [rootHeadlines, setRootHeadlines] = useState<string[]>([]);
@@ -1559,6 +1579,8 @@ export default function App() {
         );
 
         if (snapshot.empty) {
+          setRootScriptVersions([]);
+          setCurrentRootScriptVersionId(null);
           const storedLocal = loadLaunchDataFromStorage();
           if (storedLocal) {
             setFormDefaults(storedLocal);
@@ -1593,6 +1615,7 @@ export default function App() {
           rootScriptApproved: storedRootScriptApproved,
           rootScriptHeadlines: storedRootScriptHeadlines,
           rootScriptDurationMinutes: storedRootScriptDurationMinutes,
+          rootScriptActiveVersionId: storedRootScriptActiveVersionId,
           audienceDays: storedAudienceDays,
           createdAt,
           updatedAt,
@@ -1615,12 +1638,14 @@ export default function App() {
         setRootScriptDraft(storedRootScriptDraft ?? '');
         setRootScriptApproved(Boolean(storedRootScriptApproved));
         setRootHeadlines(Array.isArray(storedRootScriptHeadlines) ? storedRootScriptHeadlines : []);
+        setCurrentRootScriptVersionId(storedRootScriptActiveVersionId ?? null);
         if (Array.isArray(storedAudienceDays) && storedAudienceDays.length > 0) {
           setAudienceDays(storedAudienceDays);
         }
         if (typeof storedRootScriptDurationMinutes === 'number' && ROOT_SCRIPT_DURATION_OPTIONS.includes(storedRootScriptDurationMinutes)) {
           setRootScriptDurationMinutes(storedRootScriptDurationMinutes);
         }
+        await loadRootScriptVersions(docSnapshot.id);
         saveLaunchDataToStorage(normalized);
         const allKeys = [
           ...collectFieldKeys(),
@@ -1635,6 +1660,8 @@ export default function App() {
         });
       } catch (fetchError) {
         console.error('Erro ao carregar briefing anterior', fetchError);
+        setRootScriptVersions([]);
+        setCurrentRootScriptVersionId(null);
         const storedLocal = loadLaunchDataFromStorage();
         const storedGuidanceLocal = loadGuidanceFromStorage();
         if (storedGuidanceLocal) {
@@ -1650,7 +1677,7 @@ export default function App() {
     };
 
     fetchLatestBriefing();
-  }, []);
+  }, [loadRootScriptVersions]);
 
   useEffect(() => {
     setGuidance(prev => {
@@ -1783,6 +1810,85 @@ export default function App() {
     return createdId;
   };
 
+  async function loadRootScriptVersions(targetBriefingId: string) {
+    const versionsSnapshot = await getDocs(
+      query(
+        collection(db, 'launchBriefings', targetBriefingId, 'rootScripts'),
+        orderBy('createdAt', 'desc'),
+        limit(80)
+      )
+    );
+
+    const nextVersions: RootScriptVersion[] = versionsSnapshot.docs.map(versionDoc => {
+      const data = versionDoc.data() as Omit<RootScriptVersion, 'id'>;
+      return {
+        id: versionDoc.id,
+        title: data.title || `Roteiro ${versionDoc.id.slice(0, 6)}`,
+        content: data.content || '',
+        status: data.status || 'review',
+        approved: Boolean(data.approved),
+        headlines: Array.isArray(data.headlines) ? data.headlines : [],
+        durationMinutes: typeof data.durationMinutes === 'number' ? data.durationMinutes : DEFAULT_SCRIPT_DURATION_MINUTES,
+        themeTitles: Array.isArray(data.themeTitles) ? data.themeTitles : [],
+        editorialLineTitles: Array.isArray(data.editorialLineTitles) ? data.editorialLineTitles : [],
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        createdAtClient: data.createdAtClient,
+      };
+    });
+
+    setRootScriptVersions(nextVersions);
+  }
+
+  const persistRootScriptVersion = useCallback(
+    async (params: {
+      draft: string;
+      approved: boolean;
+      headlines: string[];
+      durationMinutes: number;
+      title: string;
+      themeTitles: string[];
+      editorialLineTitles: string[];
+      status: RootScriptVersionStatus;
+      versionId?: string | null;
+    }) => {
+      const ensuredId = await ensureBriefingDocument();
+      const versionPayload = {
+        title: params.title,
+        content: params.draft,
+        approved: params.approved,
+        headlines: params.headlines,
+        durationMinutes: params.durationMinutes,
+        themeTitles: params.themeTitles,
+        editorialLineTitles: params.editorialLineTitles,
+        status: params.status,
+        createdAtClient: new Date().toISOString(),
+        updatedAt: serverTimestamp(),
+      };
+
+      if (params.versionId) {
+        await updateDoc(doc(db, 'launchBriefings', ensuredId, 'rootScripts', params.versionId), versionPayload);
+        await loadRootScriptVersions(ensuredId);
+        return params.versionId;
+      }
+
+      const createdDoc = await addDoc(collection(db, 'launchBriefings', ensuredId, 'rootScripts'), {
+        ...versionPayload,
+        createdAt: serverTimestamp(),
+      });
+
+      await updateDoc(doc(db, 'launchBriefings', ensuredId), {
+        rootScriptActiveVersionId: createdDoc.id,
+        updatedAt: serverTimestamp(),
+      });
+
+      await loadRootScriptVersions(ensuredId);
+      setCurrentRootScriptVersionId(createdDoc.id);
+      return createdDoc.id;
+    },
+    [loadRootScriptVersions]
+  );
+
   const persistPhaseContent = async (structure: LaunchPhase[]) => {
     const ensuredId = await ensureBriefingDocument();
     await updateDoc(doc(db, 'launchBriefings', ensuredId), {
@@ -1794,7 +1900,8 @@ export default function App() {
   const persistRootScriptState = async (
     draft: string,
     approved: boolean,
-    headlines: string[]
+    headlines: string[],
+    activeVersionId?: string | null
   ) => {
     const ensuredId = await ensureBriefingDocument();
     await updateDoc(doc(db, 'launchBriefings', ensuredId), {
@@ -1802,6 +1909,7 @@ export default function App() {
       rootScriptApproved: approved,
       rootScriptHeadlines: headlines,
       rootScriptDurationMinutes,
+      rootScriptActiveVersionId: activeVersionId ?? currentRootScriptVersionId,
       updatedAt: serverTimestamp(),
     });
   };
@@ -1829,6 +1937,7 @@ export default function App() {
       rootScriptApproved,
       rootScriptHeadlines: rootHeadlines,
       rootScriptDurationMinutes,
+      rootScriptActiveVersionId: currentRootScriptVersionId,
       updatedAt: serverTimestamp(),
     };
 
@@ -2232,9 +2341,16 @@ export default function App() {
     try {
       setIsGeneratingRootScript(true);
       setError(null);
+      const hadPreviousDraft = Boolean(rootScriptDraft.trim());
+      const selectedThemeTitles = selectedThemes.map(theme => theme.title);
+      const selectedEditorialTitles = selectedEditorialLines.map(line => line.title);
       const script = await generateRootScript(baseData, {
         durationMinutes: rootScriptDurationMinutes,
-        editorialLines: selectedEditorialLines.map(line => line.title),
+        requestToken: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        regenerationHint: hadPreviousDraft
+          ? 'Gerar uma NOVA versao do roteiro do raiz com abordagem diferente da versao anterior, mantendo ROMA e selecoes atuais.'
+          : undefined,
+        editorialLines: selectedEditorialTitles,
         themes: selectedQuestionPromptBlocks.map(block => ({
           title: block.theme.title,
           sourceLabel: block.theme.sourceLabel,
@@ -2251,8 +2367,26 @@ export default function App() {
       setRootScriptApproved(false);
       setIsEditingRootScript(true);
       setRootHeadlines([]);
-      setRootHeadlinesFeedback('Roteiro gerado. Aprove e salve para liberar a geracao de headlines.');
-      await persistRootScriptState(script, false, []);
+      const versionTitle = selectedThemeTitles.length > 0
+        ? `Raiz: ${selectedThemeTitles.slice(0, 2).join(' + ')}`
+        : `Raiz ${new Date().toLocaleDateString('pt-BR')}`;
+      const nextVersionId = await persistRootScriptVersion({
+        draft: script,
+        approved: false,
+        headlines: [],
+        durationMinutes: rootScriptDurationMinutes,
+        title: versionTitle,
+        themeTitles: selectedThemeTitles,
+        editorialLineTitles: selectedEditorialTitles,
+        status: 'review',
+      });
+      setCurrentRootScriptVersionId(nextVersionId);
+      setRootHeadlinesFeedback(
+        hadPreviousDraft
+          ? 'Nova versao do roteiro gerada. Aprove e salve para liberar a geracao de headlines.'
+          : 'Roteiro gerado. Aprove e salve para liberar a geracao de headlines.'
+      );
+      await persistRootScriptState(script, false, [], nextVersionId);
     } catch (err) {
       console.error('Erro ao gerar script do raiz', err);
       setError('Nao foi possivel gerar o script do raiz. Tente novamente.');
@@ -2282,7 +2416,19 @@ export default function App() {
     try {
       setIsSavingRootScript(true);
       setError(null);
-      await persistRootScriptState(rootScriptDraft, true, rootHeadlines);
+      const ensuredVersionId = await persistRootScriptVersion({
+        versionId: currentRootScriptVersionId,
+        draft: rootScriptDraft,
+        approved: true,
+        headlines: rootHeadlines,
+        durationMinutes: rootScriptDurationMinutes,
+        title: rootScriptVersions.find(version => version.id === currentRootScriptVersionId)?.title || `Raiz ${new Date().toLocaleDateString('pt-BR')}`,
+        themeTitles: rootScriptVersions.find(version => version.id === currentRootScriptVersionId)?.themeTitles || selectedThemes.map(theme => theme.title),
+        editorialLineTitles: rootScriptVersions.find(version => version.id === currentRootScriptVersionId)?.editorialLineTitles || selectedEditorialLines.map(line => line.title),
+        status: 'approved',
+      });
+      setCurrentRootScriptVersionId(ensuredVersionId);
+      await persistRootScriptState(rootScriptDraft, true, rootHeadlines, ensuredVersionId);
       setRootScriptApproved(true);
       setIsEditingRootScript(false);
       setRootHeadlinesFeedback('Script aprovado e salvo. Agora clique em Gerar 5 headlines.');
@@ -2320,7 +2466,19 @@ export default function App() {
       setRootHeadlinesFeedback('Gerando 5 headlines...');
       const nextHeadlines = await generateRootHeadlines(baseData, rootScriptDraft);
       setRootHeadlines(nextHeadlines);
-      await persistRootScriptState(rootScriptDraft, true, nextHeadlines);
+      const ensuredVersionId = await persistRootScriptVersion({
+        versionId: currentRootScriptVersionId,
+        draft: rootScriptDraft,
+        approved: true,
+        headlines: nextHeadlines,
+        durationMinutes: rootScriptDurationMinutes,
+        title: rootScriptVersions.find(version => version.id === currentRootScriptVersionId)?.title || `Raiz ${new Date().toLocaleDateString('pt-BR')}`,
+        themeTitles: rootScriptVersions.find(version => version.id === currentRootScriptVersionId)?.themeTitles || selectedThemes.map(theme => theme.title),
+        editorialLineTitles: rootScriptVersions.find(version => version.id === currentRootScriptVersionId)?.editorialLineTitles || selectedEditorialLines.map(line => line.title),
+        status: 'approved',
+      });
+      setCurrentRootScriptVersionId(ensuredVersionId);
+      await persistRootScriptState(rootScriptDraft, true, nextHeadlines, ensuredVersionId);
       if (nextHeadlines.length > 0) {
         setRootHeadlinesFeedback(`${nextHeadlines.length} headlines geradas com sucesso.`);
       } else {
@@ -2566,6 +2724,49 @@ export default function App() {
     anchor.download = `script-raiz-${rootScriptDurationMinutes}min.md`;
     anchor.click();
     window.URL.revokeObjectURL(fileUrl);
+  };
+
+  const handleOpenRootScriptVersion = (version: RootScriptVersion) => {
+    setRootScriptDraft(version.content);
+    setRootScriptApproved(version.approved);
+    setRootHeadlines(version.headlines);
+    setRootScriptDurationMinutes(
+      ROOT_SCRIPT_DURATION_OPTIONS.includes(version.durationMinutes)
+        ? version.durationMinutes
+        : DEFAULT_SCRIPT_DURATION_MINUTES
+    );
+    setCurrentRootScriptVersionId(version.id);
+    setIsEditingRootScript(false);
+    setRootHeadlinesFeedback(`Versao carregada: ${version.title}`);
+  };
+
+  const handleMoveRootScriptVersionStatus = async (
+    version: RootScriptVersion,
+    nextStatus: RootScriptVersionStatus
+  ) => {
+    try {
+      const ensuredId = await ensureBriefingDocument();
+      await updateDoc(doc(db, 'launchBriefings', ensuredId, 'rootScripts', version.id), {
+        status: nextStatus,
+        approved: nextStatus === 'approved' || nextStatus === 'published' ? true : version.approved,
+        updatedAt: serverTimestamp(),
+      });
+      await loadRootScriptVersions(ensuredId);
+    } catch (err) {
+      console.error('Erro ao atualizar status do script', err);
+      setError('Nao foi possivel mover o card no board do script do raiz.');
+    }
+  };
+
+  const formatRootScriptVersionDate = (version: RootScriptVersion) => {
+    if (!version.createdAtClient) {
+      return 'Sem data';
+    }
+    const parsed = new Date(version.createdAtClient);
+    if (Number.isNaN(parsed.getTime())) {
+      return 'Sem data';
+    }
+    return parsed.toLocaleString('pt-BR');
   };
 
   const handleDownloadExport = () => {
@@ -3615,6 +3816,88 @@ export default function App() {
                       Apos aprovar o roteiro, clique em Gerar 5 headlines para receber opcoes atrativas com curiosidade.
                     </p>
                   )}
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Scrumban do Script de Raiz</p>
+                      <h5 className="mt-2 text-lg font-black text-slate-900">Historico de versoes por status</h5>
+                      <p className="mt-1 text-sm text-slate-600">Cada clique em "Gerar script do raiz" cria um novo card no board.</p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
+                      {rootScriptVersions.length} versoes
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-4">
+                    {ROOT_SCRIPT_SCRUMBAN_COLUMNS.map((column, columnIndex) => {
+                      const columnItems = rootScriptVersions.filter(version => version.status === column.key);
+                      const nextColumn = ROOT_SCRIPT_SCRUMBAN_COLUMNS[columnIndex + 1];
+
+                      return (
+                        <div key={column.key} className={`rounded-2xl border p-3 ${column.className}`}>
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-700">{column.label}</p>
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                              {columnItems.length}
+                            </span>
+                          </div>
+
+                          <div className="space-y-2">
+                            {columnItems.length > 0 ? (
+                              columnItems.map(version => (
+                                <div
+                                  key={version.id}
+                                  className={`rounded-xl border bg-white p-3 shadow-sm ${
+                                    currentRootScriptVersionId === version.id ? 'border-indigo-300' : 'border-slate-200'
+                                  }`}
+                                >
+                                  <p className="text-sm font-black text-slate-900">{version.title}</p>
+                                  <p className="mt-1 text-[11px] text-slate-500">{formatRootScriptVersionDate(version)}</p>
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                      {ROOT_SCRIPT_STATUS_LABELS[version.status]}
+                                    </span>
+                                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                      {version.durationMinutes} min
+                                    </span>
+                                  </div>
+                                  {version.themeTitles.length > 0 && (
+                                    <p className="mt-2 text-[11px] text-slate-600">
+                                      Temas: {version.themeTitles.slice(0, 2).join(' | ')}
+                                    </p>
+                                  )}
+                                  <div className="mt-3 flex flex-wrap gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenRootScriptVersion(version)}
+                                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 hover:border-indigo-300 hover:text-indigo-700"
+                                    >
+                                      Abrir
+                                    </button>
+                                    {nextColumn && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveRootScriptVersionStatus(version, nextColumn.key)}
+                                        className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
+                                      >
+                                        Mover para {nextColumn.label}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-4 text-xs text-slate-500">
+                                Sem cards nesta coluna.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </section>

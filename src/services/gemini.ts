@@ -246,6 +246,8 @@ interface RootScriptInput {
   themes: RootScriptThemeInput[];
   editorialLines: string[];
   durationMinutes: number;
+  requestToken?: string;
+  regenerationHint?: string;
 }
 
 export async function generateRootScript(
@@ -292,6 +294,10 @@ ${questionBlock || '  - Nenhuma pergunta selecionada'}`;
     Temas e perguntas selecionadas:
     ${selectedThemesBlock}
 
+    Controle da solicitacao:
+    - Token unico da geracao: ${input.requestToken || 'nao informado'}
+    ${input.regenerationHint ? `- Instrucao de nova versao: ${input.regenerationHint}` : ''}
+
     Regras obrigatorias:
     - O roteiro inteiro precisa reforcar e proteger a ROMA "${data.mainBenefit}".
     - Nao se desvie da promessa central. Todo bloco deve servir para tornar a ROMA mais clara, desejavel e crivel.
@@ -331,6 +337,7 @@ ${questionBlock || '  - Nenhuma pergunta selecionada'}`;
       - "### Gatilhos mentais (rosa)" listando os gatilhos realmente usados no roteiro.
       - "### Base de conhecimento (azul)" listando quais fontes da base foram utilizadas no texto.
     - Nao use HTML para colorir, nao use spans; use somente markdown com ** ** e \` \` para que a interface aplique as cores automaticamente.
+    - Se houver "Instrucao de nova versao", mantenha o mesmo objetivo, mas mude a abordagem narrativa, exemplos e encadeamento para entregar uma versao claramente diferente da anterior.
   `;
 
   const response = await getAiClient().models.generateContent({

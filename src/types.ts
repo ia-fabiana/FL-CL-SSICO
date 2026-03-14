@@ -153,9 +153,27 @@ export interface StoredBriefing extends LaunchData {
   rootScriptApproved?: boolean;
   rootScriptHeadlines?: string[];
   rootScriptDurationMinutes?: number;
+  rootScriptActiveVersionId?: string;
   audienceDays?: AudienceDay[];
   createdAt?: unknown;
   updatedAt?: unknown;
+}
+
+export type RootScriptVersionStatus = 'idea' | 'review' | 'approved' | 'published';
+
+export interface RootScriptVersion {
+  id: string;
+  title: string;
+  content: string;
+  status: RootScriptVersionStatus;
+  approved: boolean;
+  headlines: string[];
+  durationMinutes: number;
+  themeTitles: string[];
+  editorialLineTitles: string[];
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  createdAtClient?: string;
 }
 
 export type AudiencePlatform = 'instagram' | 'facebook' | 'youtube' | 'geral';

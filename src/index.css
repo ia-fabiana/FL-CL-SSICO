@@ -3,34 +3,11 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-midnight: #0d0d29;
-  --color-vivid-violet: #b407ff;
-  --color-signal-blue: #009fdf;
-  --color-growth-green: #4abf4a;
-  --color-cloud: #f6f5ff;
-}
-
-:root {
-  color-scheme: light;
-  --brand-midnight: var(--color-midnight);
-  --brand-violet: var(--color-vivid-violet);
-  --brand-blue: var(--color-signal-blue);
-  --brand-green: var(--color-growth-green);
-  --brand-surface: var(--color-cloud);
-  --brand-glow: rgba(180, 7, 255, 0.08);
 }
 
 @layer base {
   body {
-    font-family: var(--font-sans);
-    color: var(--brand-midnight);
-    background-color: var(--brand-surface);
-    background-image:
-      radial-gradient(circle at 15% -10%, var(--brand-glow), transparent 40%),
-      radial-gradient(circle at 85% 0%, rgba(0, 159, 223, 0.08), transparent 42%),
-      radial-gradient(circle at 80% 120%, rgba(74, 191, 74, 0.12), transparent 45%);
-    min-height: 100vh;
-    @apply antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
   }
 }
 

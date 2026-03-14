@@ -1,11 +1,30 @@
 import { LaunchData } from './types';
 
 export const IA_FABIANA_BRIEFING: LaunchData = {
+  generalTriggers: `Autoridade - prova de experiencia, resultados e dominio do tema.
+Prova social - quantidade de alunos, comentarios, casos e comunidade ativa.
+Reciprocidade - entregar valor antes de pedir a inscricao.
+Urgencia - prazo real para acao (data e hora).
+Escassez - vagas limitadas, bonus que expiram ou lote final.
+Pertencimento - reforco de comunidade, grupo e identidade.
+Antecipacao - deixar claro o que vem a seguir e por que esperar.
+Curiosidade - abrir loops e perguntas que puxam o proximo passo.
+Especificidade - dados, numeros e exemplos concretos.
+Historia - narrativa curta que conecta dor e solucao.
+Razao - logica e justificativa do caminho proposto.
+Compromisso - pequenos sims antes do sim maior.
+Desapego - mostrar que esta tudo bem nao comprar (aumenta confiança).
+Perda evitavel - custo de nao agir agora.
+Transformacao - contraste entre antes e depois com clareza.
+Simplicidade - deixar facil o proximo passo e reduzir friccao.
+Seguranca - garantias e suporte explicitos.
+Novidade - novidade real do metodo ou abordagem.`,
+  launchType: 'classic',
   launchModel: 'opportunity',
   productName: 'GPT da Beleza · Programa IA Fabiana',
   niche: 'Educação e consultoria em IA para negócios da beleza',
   targetAudience: 'Gestoras de salões e clínicas premium que querem atrair clientes com IA',
-  avatarName: 'Ana, a gestora visionária do Studio Lumina',
+  avatarName: 'Fabiana, gestora há mais de 20 anos no setor da beleza e empreendedora do segmento',
   mainProblem: 'Fluxo instável de clientes e falta de know-how para usar IA em marketing e operações do salão.',
   mainBenefit: 'Transformar o salão com tecnologia, recebendo aconselhamento personalizado e capacitação prática em IA para vender mais e automatizar rotinas.',
   avatarStory: `Tudo começou a mudar quando percebi que o que eu levava horas para fazer começou a sair em minutos. Eu não ficava mais travada; comecei a postar com mais frequência, com mais qualidade e, principalmente, com mais clareza. Foi nesse momento que a inteligência artificial entrou na minha vida. Pensei: "Pronto, agora resolve." Achei que era só usar e tudo ia funcionar, mas descobri uma verdade importante: IA sozinha não faz milagre. Ela é uma ferramenta. É igual a uma tesoura top; faz um corte lindo, mas depende de quem está usando.
@@ -19,12 +38,25 @@ Passei a pedir fotos e posts, mas a maioria não fazia ou a qualidade era baixa.
 Eu trabalho com beleza há mais de 20 anos. Comecei do zero, sem estrutura, sem estratégia e sem rede social, só com vontade de dar certo. Era tudo na raça: imprimir material, tentar fotos bonitas para banners e folders, fazer jornalzinho do bairro. Era difícil ter boas ideias de divulgação, chegar em casa cansada e ainda criar a próxima campanha do mês. Eu vou ser honesta: era muita pressão para divulgar bem e atrair clientes. Sempre foi trabalhoso pensar em promoções e se manter competitiva.
 
 A virada veio quando entendi que algo tinha que mudar. Se eu queria seguir relevante, precisava de clareza e um método. A IA não substitui o talento, mas me deu fôlego para manter consistência. Hoje eu uso a IA Fabiana para transformar briefing em planejamento real, garantir que cada conteúdo tenha propósito e manter o foco no que sempre importou: atender com excelência enquanto a máquina cuida da velocidade.`,
-  avatarPainPoints:
-    '- Leads caem 40% em semanas comuns quando dependem só de indicação.\n- Campanhas ficam na mão de terceirizados e não geram dados.\n- Agenda lotada em horários nobres, mas ociosa à tarde.\n- Falta narrativa tecnológica ao apresentar o salão.',
-  avatarObjections:
-    '- "Já tentei automações e eram complexas demais."\n- "Minha equipe não tem perfil técnico."\n- "Clientes querem toque humano, IA pode afastá-los."',
-  avatarDesiredState:
-    'Agenda previsível, storytelling tech-friendly nas redes, equipe usando prompts para acelerar propostas e Ana como autoridade em IA para beleza.',
+  avatarAge: '35 a 54 anos',
+  avatarGender: 'Mulher',
+  avatarSalary: 'R$ 8 mil a R$ 25 mil por mês',
+  avatarProfession: 'Dona ou gestora de negócio da beleza',
+  avatarReligion: 'Cristã',
+  avatarPoliticalOrientation: 'Conservadora/moderada',
+  avatarOtherDetails:
+    'Tem entre 1 a 2 filhos. Nunca usou IA ou já usou de forma muito básica. Trabalha o dia inteiro no operacional e sente dificuldade para divulgar o negócio nas redes sociais.',
+  avatarSummary:
+    'Mulher, dona de negócio da beleza, 35 a 54 anos, tem de 1 a 2 filhos, cristã, nunca usou IA ou só usou o básico. Tem muita dificuldade em divulgar seu negócio da beleza pelas redes sociais e atrair novas clientes.',
+  avatarPains: '',
+  avatarDesires: '',
+  avatarObjections: '',
+  avatarRomaMyth: '',
+  avatarFear: '',
+  avatarLimitingBeliefs: '',
+  avatarQuote: '',
+  avatarOpportunitiesShortcuts: '',
+  avatarResearchABC: '',
   cplThreeSolution:
     'Demo ao vivo do GPT da Beleza resolvendo briefings reais dos salões + plano de implementação de 90 dias com indicadores de clientes e margem.',
   price: 'R$ 1.997 à vista ou 12× de R$ 199,70',

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { LaunchPlan, LaunchPhase } from '../types';
-import { ChevronDown, ChevronUp, FileText, Mail, Video, Megaphone, Copy, Check, User, Share2, Info, Layout, Bell, ListChecks, Sparkles, Wand2 } from 'lucide-react';
+import { DEFAULT_SCRIPT_DURATION_MINUTES } from '../constants';
+import { ChevronDown, ChevronUp, Copy, Check, User, Layout, Sparkles, Wand2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface Props {
@@ -32,16 +33,6 @@ export default function LaunchResult({
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'video': return <Video size={18} className="text-red-500" />;
-      case 'heygen': return <Video size={18} className="text-purple-500" />;
-      case 'email': return <Mail size={18} className="text-blue-500" />;
-      case 'ad': return <Megaphone size={18} className="text-orange-500" />;
-      default: return <FileText size={18} className="text-slate-500" />;
-    }
   };
 
   useEffect(() => {
@@ -97,7 +88,7 @@ export default function LaunchResult({
               <div className="p-2 bg-indigo-600 rounded-lg text-white">
                 <User size={24} />
               </div>
-              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">História do Avatar</h3>
+              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">História da Expert</h3>
             </div>
             <div className="prose prose-indigo max-w-none text-slate-600 leading-relaxed relative">
               <ReactMarkdown>{isDefaultPlan && pendingAvatarStory ? pendingAvatarStory : plan.avatarHistory}</ReactMarkdown>
@@ -130,14 +121,14 @@ export default function LaunchResult({
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  {phase.scripts && <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">Gerado</span>}
+                  {phase.liveScript && <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">Gerado</span>}
                   {expandedPhase === phase.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
               </button>
 
               {expandedPhase === phase.id && (
                 <div className="px-6 pb-6 space-y-6 border-t border-slate-50 pt-4">
-                  {!phase.scripts ? (
+                  {!phase.liveScript ? (
                     <div className="py-8 text-center">
                       <p className="text-slate-500 mb-6">
                         {canGeneratePhase
@@ -168,30 +159,24 @@ export default function LaunchResult({
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-6">
-                      {phase.scripts.map((script, sIdx) => (
-                        <div key={sIdx} className="bg-slate-50 rounded-xl p-6 relative group">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                              {getIcon(script.type)}
-                              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                {script.type === 'ad' ? 'Criativo/Anúncio' : script.type === 'heygen' ? 'Roteiro HeyGen' : script.type}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => handleCopy(script.content, `${phase.id}-${sIdx}`)}
-                              className="p-2 hover:bg-white rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
-                              title="Copiar conteúdo"
-                            >
-                              {copiedId === `${phase.id}-${sIdx}` ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-                            </button>
-                          </div>
-                          <h4 className="font-bold text-slate-800 mb-3">{script.title}</h4>
-                          <div className="prose prose-slate max-w-none text-slate-600 text-sm whitespace-pre-wrap">
-                            <ReactMarkdown>{script.content}</ReactMarkdown>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="bg-slate-50 rounded-xl p-6 relative">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-xs font-bold uppercase tracking-[0.4em] text-slate-400">Script completo</span>
+                        <button
+                          onClick={() => handleCopy(phase.liveScript, `script-${phase.id}`)}
+                          className="p-2 hover:bg-white rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
+                          title="Copiar conteúdo"
+                        >
+                          {copiedId === `script-${phase.id}` ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                        </button>
+                      </div>
+                      <div className="mb-4 rounded-2xl border border-indigo-100 bg-indigo-50/80 px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600">
+                        Tempo solicitado: aproximadamente {phase.liveScriptDurationMinutes ?? DEFAULT_SCRIPT_DURATION_MINUTES} minutos.
+                      </div>
+                      <div
+                        className="prose prose-slate max-w-none text-slate-600 text-sm"
+                        dangerouslySetInnerHTML={{ __html: phase.liveScript }}
+                      />
                     </div>
                   )}
                 </div>

@@ -1,3 +1,5 @@
+export type LaunchType = 'classic' | 'seed';
+
 export interface LaunchData {
   avatarName: string;
   productName: string;
@@ -6,9 +8,23 @@ export interface LaunchData {
   mainProblem: string;
   mainBenefit: string;
   avatarStory: string;
-  avatarPainPoints: string;
+  avatarAge: string;
+  avatarGender: string;
+  avatarSalary: string;
+  avatarProfession: string;
+  avatarReligion: string;
+  avatarPoliticalOrientation: string;
+  avatarOtherDetails: string;
+  avatarSummary: string;
+  avatarPains: string;
+  avatarDesires: string;
   avatarObjections: string;
-  avatarDesiredState: string;
+  avatarRomaMyth: string;
+  avatarFear: string;
+  avatarLimitingBeliefs: string;
+  avatarQuote: string;
+  avatarOpportunitiesShortcuts: string;
+  avatarResearchABC: string;
   cplThreeSolution: string;
   price: string;
   anchorPrice?: string;
@@ -19,12 +35,15 @@ export interface LaunchData {
   launchDate: string;
   offerDetails: string;
   launchModel: 'opportunity' | 'right_wrong';
+  launchType: LaunchType;
+  generalTriggers: string;
 }
 
 export interface LaunchPhase {
   id: string;
   name: string;
   description: string;
+  offsetDays?: number;
   liveScript?: string;
   liveScriptUpdatedAt?: string;
   liveScriptDurationMinutes?: number;
@@ -46,16 +65,33 @@ export interface StoredPhaseContent {
   liveScript?: string;
   updatedAt?: string;
   durationMinutes?: number;
+  offsetDays?: number;
   tasks?: PhaseTask[];
 }
 
 export type PhaseContentMap = Record<string, StoredPhaseContent>;
+
+export type TaskContentMode = 'none' | 'text' | 'image';
+
+export interface TaskProof {
+  id: string;
+  name: string;
+  url: string;
+  path: string;
+  uploadedAt?: string;
+}
 
 export interface PhaseTask {
   id: string;
   title: string;
   details: string;
   dueOffsetDays?: number;
+  knowledgeBase?: string;
+  contentMode?: TaskContentMode;
+  contentDraft?: string;
+  contentSavedAt?: string;
+  proofRequired?: boolean;
+  proofs?: TaskProof[];
   done: boolean;
   doneAt?: string;
 }
@@ -110,9 +146,40 @@ export interface ChecklistData {
 }
 
 export interface StoredBriefing extends LaunchData {
-  checklist: ChecklistData;
+  checklist?: ChecklistData;
   guidance?: GuidanceMap;
   phaseContent?: PhaseContentMap;
+  rootScriptDraft?: string;
+  rootScriptApproved?: boolean;
+  rootScriptHeadlines?: string[];
+  rootScriptDurationMinutes?: number;
+  audienceDays?: AudienceDay[];
   createdAt?: unknown;
   updatedAt?: unknown;
+}
+
+export type AudiencePlatform = 'instagram' | 'facebook' | 'youtube' | 'geral';
+
+export interface AudienceSubTask {
+  id: string;
+  title: string;
+  done: boolean;
+  doneAt?: string;
+}
+
+export interface AudienceTask {
+  id: string;
+  title: string;
+  platform: AudiencePlatform;
+  notes?: string;
+  done: boolean;
+  doneAt?: string;
+  subTasks?: AudienceSubTask[];
+}
+
+export interface AudienceDay {
+  id: string;
+  date?: string;
+  label: string;
+  tasks: AudienceTask[];
 }

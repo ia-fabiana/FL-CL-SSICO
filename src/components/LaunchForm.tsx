@@ -16,7 +16,9 @@ const EMPTY_FORM: LaunchData = {
   expertLinkInBio: '',
   expertPhotoReferenceUrl: '',
   expertLookGuide: '',
+  expertLookReferenceUrl: '',
   expertEnvironmentGuide: '',
+  expertEnvironmentReferenceUrl: '',
   expertArtDirection: '',
   productName: '',
   niche: '',
@@ -234,6 +236,8 @@ interface Props {
   onDownloadSection?: (sectionId: string) => void;
   onSaveMainBenefit?: (mainBenefit: string) => Promise<void> | void;
   onUploadExpertPhoto?: (file: File) => Promise<string>;
+  onUploadExpertLookImage?: (file: File) => Promise<string>;
+  onUploadExpertEnvironmentImage?: (file: File) => Promise<string>;
   isLoading: boolean;
   initialData?: LaunchData | null;
   onAvatarStoryDraft?: (value: string) => void;
@@ -251,6 +255,8 @@ export default function LaunchForm({
   onDownloadSection,
   onSaveMainBenefit,
   onUploadExpertPhoto,
+  onUploadExpertLookImage,
+  onUploadExpertEnvironmentImage,
   isLoading,
   initialData,
   onAvatarStoryDraft,
@@ -266,6 +272,8 @@ export default function LaunchForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingRoma, setIsSavingRoma] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isUploadingLookImage, setIsUploadingLookImage] = useState(false);
+  const [isUploadingEnvironmentImage, setIsUploadingEnvironmentImage] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const isSectionActive = (sectionId: string) => !activeSection || activeSection === sectionId;
@@ -421,6 +429,58 @@ export default function LaunchForm({
       setSaveError(error instanceof Error ? error.message : 'Não foi possível enviar a foto da expert.');
     } finally {
       setIsUploadingPhoto(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleUploadExpertLookImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!onUploadExpertLookImage) {
+      setSaveError('Upload de referência de roupa não está habilitado neste ambiente.');
+      event.target.value = '';
+      return;
+    }
+
+    setSaveError(null);
+    setIsUploadingLookImage(true);
+    try {
+      const uploadedUrl = await onUploadExpertLookImage(file);
+      setFormData(prev => ({ ...prev, expertLookReferenceUrl: uploadedUrl }));
+    } catch (error) {
+      console.error('Erro ao enviar referência de roupa', error);
+      setSaveError(error instanceof Error ? error.message : 'Não foi possível enviar a referência de roupa.');
+    } finally {
+      setIsUploadingLookImage(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleUploadExpertEnvironmentImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!onUploadExpertEnvironmentImage) {
+      setSaveError('Upload de referência de ambiente não está habilitado neste ambiente.');
+      event.target.value = '';
+      return;
+    }
+
+    setSaveError(null);
+    setIsUploadingEnvironmentImage(true);
+    try {
+      const uploadedUrl = await onUploadExpertEnvironmentImage(file);
+      setFormData(prev => ({ ...prev, expertEnvironmentReferenceUrl: uploadedUrl }));
+    } catch (error) {
+      console.error('Erro ao enviar referência de ambiente', error);
+      setSaveError(error instanceof Error ? error.message : 'Não foi possível enviar a referência de ambiente.');
+    } finally {
+      setIsUploadingEnvironmentImage(false);
       event.target.value = '';
     }
   };
@@ -820,6 +880,29 @@ export default function LaunchForm({
                   data-gramm_editor="false"
                   data-enable-grammarly="false"
                 />
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]">
+                  <input
+                    name="expertLookReferenceUrl"
+                    value={formData.expertLookReferenceUrl}
+                    onChange={handleChange}
+                    placeholder="URL de imagem de referência da roupa (opcional)"
+                    className={baseFieldClass}
+                    data-gramm="false"
+                    data-gramm_editor="false"
+                    data-enable-grammarly="false"
+                  />
+                  <label className="rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-fuchsia-700 hover:bg-fuchsia-100 cursor-pointer self-center text-center">
+                    {isUploadingLookImage ? 'Enviando roupa...' : 'Subir ref. roupa'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadExpertLookImage}
+                      className="hidden"
+                      disabled={isUploadingLookImage}
+                    />
+                  </label>
+                </div>
+                <p className="text-[11px] text-slate-500">Você pode preencher por texto, por imagem de referência, ou os dois.</p>
               </div>
 
               <div className="space-y-2 md:col-span-2">
@@ -835,6 +918,29 @@ export default function LaunchForm({
                   data-gramm_editor="false"
                   data-enable-grammarly="false"
                 />
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]">
+                  <input
+                    name="expertEnvironmentReferenceUrl"
+                    value={formData.expertEnvironmentReferenceUrl}
+                    onChange={handleChange}
+                    placeholder="URL de imagem de referência do ambiente (opcional)"
+                    className={baseFieldClass}
+                    data-gramm="false"
+                    data-gramm_editor="false"
+                    data-enable-grammarly="false"
+                  />
+                  <label className="rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-fuchsia-700 hover:bg-fuchsia-100 cursor-pointer self-center text-center">
+                    {isUploadingEnvironmentImage ? 'Enviando ambiente...' : 'Subir ref. ambiente'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadExpertEnvironmentImage}
+                      className="hidden"
+                      disabled={isUploadingEnvironmentImage}
+                    />
+                  </label>
+                </div>
+                <p className="text-[11px] text-slate-500">Você pode preencher por texto, por imagem de referência, ou os dois.</p>
               </div>
 
               <div className="space-y-2 md:col-span-2">

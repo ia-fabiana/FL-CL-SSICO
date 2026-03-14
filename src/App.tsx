@@ -55,7 +55,9 @@ const EMPTY_LAUNCH_DATA: LaunchData = {
   expertLinkInBio: '',
   expertPhotoReferenceUrl: '',
   expertLookGuide: '',
+  expertLookReferenceUrl: '',
   expertEnvironmentGuide: '',
+  expertEnvironmentReferenceUrl: '',
   expertArtDirection: '',
   productName: '',
   niche: '',
@@ -1863,7 +1865,10 @@ export default function App() {
     return createdId;
   };
 
-  const handleUploadExpertPhoto = async (file: File): Promise<string> => {
+  const uploadExpertReferenceImage = async (
+    file: File,
+    referenceType: 'photo-reference' | 'look-reference' | 'environment-reference'
+  ): Promise<string> => {
     const maxSizeMb = 12;
     if (file.size > maxSizeMb * 1024 * 1024) {
       throw new Error(`Arquivo muito grande. Envie imagem de até ${maxSizeMb}MB.`);
@@ -1871,11 +1876,20 @@ export default function App() {
 
     const ensuredId = await ensureBriefingDocument();
     const safeName = file.name.replace(/[^\w.\-]/g, '_');
-    const storagePath = `launchBriefings/${ensuredId}/expert/photo-reference/${Date.now()}-${safeName}`;
+    const storagePath = `launchBriefings/${ensuredId}/expert/${referenceType}/${Date.now()}-${safeName}`;
     const fileRef = ref(storage, storagePath);
     await uploadBytes(fileRef, file);
     return getDownloadURL(fileRef);
   };
+
+  const handleUploadExpertPhoto = async (file: File): Promise<string> =>
+    uploadExpertReferenceImage(file, 'photo-reference');
+
+  const handleUploadExpertLookImage = async (file: File): Promise<string> =>
+    uploadExpertReferenceImage(file, 'look-reference');
+
+  const handleUploadExpertEnvironmentImage = async (file: File): Promise<string> =>
+    uploadExpertReferenceImage(file, 'environment-reference');
 
   const persistRootScriptVersion = useCallback(
     async (params: {
@@ -3102,6 +3116,8 @@ export default function App() {
           onDownloadSection={handleDownloadCategory}
           onSaveMainBenefit={handleSaveMainBenefit}
           onUploadExpertPhoto={handleUploadExpertPhoto}
+          onUploadExpertLookImage={handleUploadExpertLookImage}
+          onUploadExpertEnvironmentImage={handleUploadExpertEnvironmentImage}
           isLoading={isLoading}
           initialData={formDefaults ?? undefined}
           onAvatarStoryDraft={setAvatarStoryDraft}

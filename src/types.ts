@@ -9,7 +9,9 @@ export interface LaunchData {
   expertLinkInBio: string;
   expertPhotoReferenceUrl: string;
   expertLookGuide: string;
+  expertLookReferenceUrl: string;
   expertEnvironmentGuide: string;
+  expertEnvironmentReferenceUrl: string;
   expertArtDirection: string;
   productName: string;
   niche: string;

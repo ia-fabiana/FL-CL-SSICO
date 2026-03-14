@@ -503,7 +503,9 @@ Instagram URL: ${data.expertInstagramUrl || 'nao informado'}
 Link principal da bio: ${data.expertLinkInBio || 'nao informado'}
 Foto de referencia da expert (URL): ${data.expertPhotoReferenceUrl || 'nao informado'}
 Guia de roupa/visual: ${data.expertLookGuide || 'nao informado'}
+Imagem de referencia da roupa (URL): ${data.expertLookReferenceUrl || 'nao informado'}
 Guia de ambiente/cenario: ${data.expertEnvironmentGuide || 'nao informado'}
+Imagem de referencia do ambiente (URL): ${data.expertEnvironmentReferenceUrl || 'nao informado'}
 Direcao artistica: ${data.expertArtDirection || 'nao informado'}
 Base ampliada do avatar:
 ${avatarKnowledgeBase(data)}
@@ -769,7 +771,9 @@ YouTube URL: ${data.expertYoutubeUrl || 'nao informado'}
 Link principal da bio: ${data.expertLinkInBio || 'nao informado'}
 Foto de referencia da expert (URL): ${data.expertPhotoReferenceUrl || 'nao informado'}
 Guia de roupa/visual: ${data.expertLookGuide || 'nao informado'}
+Imagem de referencia da roupa (URL): ${data.expertLookReferenceUrl || 'nao informado'}
 Guia de ambiente/cenario: ${data.expertEnvironmentGuide || 'nao informado'}
+Imagem de referencia do ambiente (URL): ${data.expertEnvironmentReferenceUrl || 'nao informado'}
 Direcao artistica desejada: ${data.expertArtDirection || 'nao informado'}
 `.trim();
 
@@ -810,6 +814,7 @@ REGRAS FINAIS:
 - O conteudo deve apresentar a EXPERT, nao o avatar/cliente.
 - Use os dados da historia, nicho, publico, problema e ROMA da expert para construir autoridade e identificacao.
 - Em tarefas visuais, respeite prioritariamente foto de referencia, roupa, ambiente e direcao artistica informados.
+- Se houver imagem de referencia de roupa/ambiente, priorize essa referencia visual acima da descricao em texto.
 - Linguagem em portugues brasileiro, tom de autoridade, calor humano e energia.
 - Seja especifico ao nicho e ao perfil da expert.
 - Nao use markdown.

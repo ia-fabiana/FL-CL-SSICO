@@ -105,8 +105,12 @@ function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskR
 
   if (effectiveContentMode === 'image' || effectiveContentMode === 'both') {
     if (!launchData.expertPhotoReferenceUrl) missingFields.push('Foto de referência da expert (URL/upload)');
-    if (!launchData.expertLookGuide) missingFields.push('Guia de roupa/visual da expert');
-    if (!launchData.expertEnvironmentGuide) missingFields.push('Guia de ambiente/cenário');
+    if (!launchData.expertLookGuide && !launchData.expertLookReferenceUrl) {
+      missingFields.push('Roupa/visual: texto ou imagem de referência');
+    }
+    if (!launchData.expertEnvironmentGuide && !launchData.expertEnvironmentReferenceUrl) {
+      missingFields.push('Ambiente/cenário: texto ou imagem de referência');
+    }
   }
 
   const canGenerate = missingFields.length === 0;

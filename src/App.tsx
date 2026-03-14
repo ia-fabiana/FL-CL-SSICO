@@ -1069,6 +1069,7 @@ export default function App() {
   const [savingTaskKey, setSavingTaskKey] = useState<string | null>(null);
   const [uploadingTaskKey, setUploadingTaskKey] = useState<string | null>(null);
   const briefingPanelRef = useRef<HTMLDivElement | null>(null);
+  const rootScriptWorkspaceRef = useRef<HTMLDivElement | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportPreview, setExportPreview] = useState('');
   const [isRootScriptPdfModalOpen, setIsRootScriptPdfModalOpen] = useState(false);
@@ -1909,7 +1910,7 @@ export default function App() {
       rootScriptApproved: approved,
       rootScriptHeadlines: headlines,
       rootScriptDurationMinutes,
-      rootScriptActiveVersionId: activeVersionId ?? currentRootScriptVersionId,
+      rootScriptActiveVersionId: activeVersionId === undefined ? currentRootScriptVersionId : activeVersionId,
       updatedAt: serverTimestamp(),
     });
   };
@@ -2726,7 +2727,12 @@ export default function App() {
     window.URL.revokeObjectURL(fileUrl);
   };
 
-  const handleOpenRootScriptVersion = (version: RootScriptVersion) => {
+  const handleOpenRootScriptVersion = async (version: RootScriptVersion) => {
+    if (!version.content?.trim()) {
+      setError('Essa versao nao possui conteudo para abrir.');
+      return;
+    }
+
     setRootScriptDraft(version.content);
     setRootScriptApproved(version.approved);
     setRootHeadlines(version.headlines);
@@ -2736,8 +2742,20 @@ export default function App() {
         : DEFAULT_SCRIPT_DURATION_MINUTES
     );
     setCurrentRootScriptVersionId(version.id);
-    setIsEditingRootScript(false);
+    setIsEditingRootScript(true);
     setRootHeadlinesFeedback(`Versao carregada: ${version.title}`);
+
+    try {
+      await persistRootScriptState(version.content, version.approved, version.headlines, version.id);
+    } catch (err) {
+      console.error('Erro ao sincronizar versao aberta', err);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.setTimeout(() => {
+        rootScriptWorkspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    }
   };
 
   const handleMoveRootScriptVersionStatus = async (
@@ -2755,6 +2773,51 @@ export default function App() {
     } catch (err) {
       console.error('Erro ao atualizar status do script', err);
       setError('Nao foi possivel mover o card no board do script do raiz.');
+    }
+  };
+
+  const handleClearRootScript = async () => {
+    setRootScriptDraft('');
+    setRootScriptApproved(false);
+    setRootHeadlines([]);
+    setIsEditingRootScript(false);
+    setCurrentRootScriptVersionId(null);
+    setRootHeadlinesFeedback('Roteiro limpo. Gere uma nova versao quando quiser.');
+
+    try {
+      await persistRootScriptState('', false, [], null);
+    } catch (err) {
+      console.error('Erro ao limpar roteiro do raiz', err);
+      setError('Nao foi possivel limpar o roteiro do raiz.');
+    }
+  };
+
+  const handleSendRootScriptToScrumban = async () => {
+    if (!rootScriptDraft.trim()) {
+      setError('Gere ou abra um roteiro antes de enviar para o Scrumban.');
+      return;
+    }
+
+    try {
+      const currentVersion = rootScriptVersions.find(version => version.id === currentRootScriptVersionId);
+      const ensuredVersionId = await persistRootScriptVersion({
+        versionId: currentRootScriptVersionId,
+        draft: rootScriptDraft,
+        approved: rootScriptApproved,
+        headlines: rootHeadlines,
+        durationMinutes: rootScriptDurationMinutes,
+        title: currentVersion?.title || `Raiz ${new Date().toLocaleDateString('pt-BR')}`,
+        themeTitles: currentVersion?.themeTitles || selectedThemes.map(theme => theme.title),
+        editorialLineTitles: currentVersion?.editorialLineTitles || selectedEditorialLines.map(line => line.title),
+        status: 'review',
+      });
+
+      setCurrentRootScriptVersionId(ensuredVersionId);
+      await persistRootScriptState(rootScriptDraft, rootScriptApproved, rootHeadlines, ensuredVersionId);
+      setRootHeadlinesFeedback('Roteiro enviado para o Scrumban em Em revisao.');
+    } catch (err) {
+      console.error('Erro ao enviar roteiro para o Scrumban', err);
+      setError('Nao foi possivel enviar o roteiro para o Scrumban.');
     }
   };
 
@@ -3746,33 +3809,17 @@ export default function App() {
                   <button type="button" onClick={handleDownloadRootScriptMarkdown} disabled={!rootScriptDraft.trim()} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-300 bg-violet-50 px-5 py-2.5 text-sm font-bold text-violet-800 hover:border-violet-400 hover:bg-violet-100 disabled:opacity-60">
                     Baixar Markdown
                   </button>
+                  <button type="button" onClick={handleClearRootScript} disabled={!rootScriptDraft.trim() && rootHeadlines.length === 0} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-rose-300 bg-rose-50 px-5 py-2.5 text-sm font-bold text-rose-800 hover:border-rose-400 hover:bg-rose-100 disabled:opacity-60">
+                    Limpar roteiro
+                  </button>
+                  <button type="button" onClick={handleSendRootScriptToScrumban} disabled={!rootScriptDraft.trim()} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-2.5 text-sm font-bold text-indigo-800 hover:border-indigo-400 hover:bg-indigo-100 disabled:opacity-60">
+                    Enviar para Scrumban
+                  </button>
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-900">
-                  <p className="font-semibold">Regras para gerar:</p>
-                  <ul className="mt-2 space-y-1 text-indigo-800">
-                    <li>- Marque pelo menos 1 tema.</li>
-                    <li>- Marque pelo menos 1 linha editorial.</li>
-                    <li>- Escolha 1 pergunta em Contexto, 1 em Beneficios e 1 em Como fazer para cada tema.</li>
-                    <li>- O roteiro sempre sera alinhado a ROMA.</li>
-                  </ul>
-                </div>
-
-                <div className="mt-5">
+                <div ref={rootScriptWorkspaceRef} className="mt-5">
                   {rootScriptDraft ? (
                     <div className="space-y-3">
-                      <div className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.28em] text-indigo-600">
-                        Roteiro gerado para aproximadamente {rootScriptDurationMinutes} minutos
-                      </div>
-                      {rootScriptApproved ? (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
-                          Script aprovado e salvo. Agora voce pode gerar as 5 headlines.
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-black uppercase tracking-[0.22em] text-amber-700">
-                          Script pendente de aprovacao. Edite se necessario e clique em Aprovar e salvar.
-                        </div>
-                      )}
                       {isEditingRootScript ? (
                         <textarea
                           title="Editor do script do raiz em markdown"

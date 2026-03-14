@@ -14,6 +14,10 @@ const EMPTY_FORM: LaunchData = {
   expertFacebookUrl: '',
   expertYoutubeUrl: '',
   expertLinkInBio: '',
+  expertPhotoReferenceUrl: '',
+  expertLookGuide: '',
+  expertEnvironmentGuide: '',
+  expertArtDirection: '',
   productName: '',
   niche: '',
   targetAudience: '',
@@ -229,6 +233,7 @@ interface Props {
   onSubmit: (data: LaunchData) => Promise<void> | void;
   onDownloadSection?: (sectionId: string) => void;
   onSaveMainBenefit?: (mainBenefit: string) => Promise<void> | void;
+  onUploadExpertPhoto?: (file: File) => Promise<string>;
   isLoading: boolean;
   initialData?: LaunchData | null;
   onAvatarStoryDraft?: (value: string) => void;
@@ -245,6 +250,7 @@ export default function LaunchForm({
   onSubmit,
   onDownloadSection,
   onSaveMainBenefit,
+  onUploadExpertPhoto,
   isLoading,
   initialData,
   onAvatarStoryDraft,
@@ -259,6 +265,7 @@ export default function LaunchForm({
   const [formData, setFormData] = useState<LaunchData>(buildFormData(initialData));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingRoma, setIsSavingRoma] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const isSectionActive = (sectionId: string) => !activeSection || activeSection === sectionId;
@@ -389,6 +396,32 @@ export default function LaunchForm({
       setSaveError(error instanceof Error ? error.message : 'Não foi possível salvar a ROMA agora. Tente novamente.');
     } finally {
       setIsSavingRoma(false);
+    }
+  };
+
+  const handleUploadExpertPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!onUploadExpertPhoto) {
+      setSaveError('Upload de foto não está habilitado neste ambiente.');
+      event.target.value = '';
+      return;
+    }
+
+    setSaveError(null);
+    setIsUploadingPhoto(true);
+    try {
+      const uploadedUrl = await onUploadExpertPhoto(file);
+      setFormData(prev => ({ ...prev, expertPhotoReferenceUrl: uploadedUrl }));
+    } catch (error) {
+      console.error('Erro ao enviar foto da expert', error);
+      setSaveError(error instanceof Error ? error.message : 'Não foi possível enviar a foto da expert.');
+    } finally {
+      setIsUploadingPhoto(false);
+      event.target.value = '';
     }
   };
 
@@ -739,6 +772,80 @@ export default function LaunchForm({
                   onChange={handleChange}
                   placeholder="Ex: https://seulink.com"
                   className={baseFieldClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-700">Foto de referência da Expert (URL)</label>
+                <input
+                  name="expertPhotoReferenceUrl"
+                  value={formData.expertPhotoReferenceUrl}
+                  onChange={handleChange}
+                  placeholder="Ex: https://.../foto-da-expert.jpg"
+                  className={baseFieldClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-fuchsia-700 hover:bg-fuchsia-100 cursor-pointer">
+                    {isUploadingPhoto ? 'Enviando foto...' : 'Subir foto da expert'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadExpertPhoto}
+                      className="hidden"
+                      disabled={isUploadingPhoto}
+                    />
+                  </label>
+                  <span className="text-[11px] text-slate-500">
+                    Se enviar arquivo, a URL será preenchida automaticamente.
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-700">Guia de roupa/visual da Expert</label>
+                <textarea
+                  name="expertLookGuide"
+                  value={formData.expertLookGuide}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="Ex: blazer bege, camisa branca, acessórios discretos, imagem premium e elegante."
+                  className={textareaMediumClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-700">Guia de ambiente/cenário</label>
+                <textarea
+                  name="expertEnvironmentGuide"
+                  value={formData.expertEnvironmentGuide}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="Ex: ambiente de salão sofisticado, iluminação suave, fundo clean e organizado."
+                  className={textareaMediumClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-700">Direção artística da imagem</label>
+                <textarea
+                  name="expertArtDirection"
+                  value={formData.expertArtDirection}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="Ex: meio corpo, luz natural lateral, expressão confiante e acolhedora, paleta rosé e dourado."
+                  className={textareaMediumClass}
                   data-gramm="false"
                   data-gramm_editor="false"
                   data-enable-grammarly="false"

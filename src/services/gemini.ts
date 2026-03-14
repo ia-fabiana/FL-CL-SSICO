@@ -501,6 +501,10 @@ Produto / metodo: ${data.productName || 'nao informado'}
 Instagram @: ${data.expertInstagramHandle || 'nao informado'}
 Instagram URL: ${data.expertInstagramUrl || 'nao informado'}
 Link principal da bio: ${data.expertLinkInBio || 'nao informado'}
+Foto de referencia da expert (URL): ${data.expertPhotoReferenceUrl || 'nao informado'}
+Guia de roupa/visual: ${data.expertLookGuide || 'nao informado'}
+Guia de ambiente/cenario: ${data.expertEnvironmentGuide || 'nao informado'}
+Direcao artistica: ${data.expertArtDirection || 'nao informado'}
 Base ampliada do avatar:
 ${avatarKnowledgeBase(data)}
   `.trim();
@@ -763,6 +767,10 @@ Instagram URL: ${data.expertInstagramUrl || 'nao informado'}
 Facebook URL: ${data.expertFacebookUrl || 'nao informado'}
 YouTube URL: ${data.expertYoutubeUrl || 'nao informado'}
 Link principal da bio: ${data.expertLinkInBio || 'nao informado'}
+Foto de referencia da expert (URL): ${data.expertPhotoReferenceUrl || 'nao informado'}
+Guia de roupa/visual: ${data.expertLookGuide || 'nao informado'}
+Guia de ambiente/cenario: ${data.expertEnvironmentGuide || 'nao informado'}
+Direcao artistica desejada: ${data.expertArtDirection || 'nao informado'}
 `.trim();
 
   const taskOutputRule = subTaskId === 'ig-02'
@@ -801,6 +809,7 @@ ${taskOutputRule}
 REGRAS FINAIS:
 - O conteudo deve apresentar a EXPERT, nao o avatar/cliente.
 - Use os dados da historia, nicho, publico, problema e ROMA da expert para construir autoridade e identificacao.
+- Em tarefas visuais, respeite prioritariamente foto de referencia, roupa, ambiente e direcao artistica informados.
 - Linguagem em portugues brasileiro, tom de autoridade, calor humano e energia.
 - Seja especifico ao nicho e ao perfil da expert.
 - Nao use markdown.

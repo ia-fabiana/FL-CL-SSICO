@@ -103,6 +103,12 @@ function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskR
     if (!launchData.mainBenefit) missingFields.push('Benefício principal (ROMA)');
   }
 
+  if (effectiveContentMode === 'image' || effectiveContentMode === 'both') {
+    if (!launchData.expertPhotoReferenceUrl) missingFields.push('Foto de referência da expert (URL/upload)');
+    if (!launchData.expertLookGuide) missingFields.push('Guia de roupa/visual da expert');
+    if (!launchData.expertEnvironmentGuide) missingFields.push('Guia de ambiente/cenário');
+  }
+
   const canGenerate = missingFields.length === 0;
 
   const handleGenerate = async () => {

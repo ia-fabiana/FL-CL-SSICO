@@ -53,6 +53,10 @@ const EMPTY_LAUNCH_DATA: LaunchData = {
   expertFacebookUrl: '',
   expertYoutubeUrl: '',
   expertLinkInBio: '',
+  expertPhotoReferenceUrl: '',
+  expertLookGuide: '',
+  expertEnvironmentGuide: '',
+  expertArtDirection: '',
   productName: '',
   niche: '',
   targetAudience: '',
@@ -1859,6 +1863,20 @@ export default function App() {
     return createdId;
   };
 
+  const handleUploadExpertPhoto = async (file: File): Promise<string> => {
+    const maxSizeMb = 12;
+    if (file.size > maxSizeMb * 1024 * 1024) {
+      throw new Error(`Arquivo muito grande. Envie imagem de até ${maxSizeMb}MB.`);
+    }
+
+    const ensuredId = await ensureBriefingDocument();
+    const safeName = file.name.replace(/[^\w.\-]/g, '_');
+    const storagePath = `launchBriefings/${ensuredId}/expert/photo-reference/${Date.now()}-${safeName}`;
+    const fileRef = ref(storage, storagePath);
+    await uploadBytes(fileRef, file);
+    return getDownloadURL(fileRef);
+  };
+
   const persistRootScriptVersion = useCallback(
     async (params: {
       draft: string;
@@ -3083,6 +3101,7 @@ export default function App() {
           onSubmit={handleSaveBriefing}
           onDownloadSection={handleDownloadCategory}
           onSaveMainBenefit={handleSaveMainBenefit}
+          onUploadExpertPhoto={handleUploadExpertPhoto}
           isLoading={isLoading}
           initialData={formDefaults ?? undefined}
           onAvatarStoryDraft={setAvatarStoryDraft}

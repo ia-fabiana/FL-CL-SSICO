@@ -7,6 +7,10 @@ export interface LaunchData {
   expertFacebookUrl: string;
   expertYoutubeUrl: string;
   expertLinkInBio: string;
+  expertPhotoReferenceUrl: string;
+  expertLookGuide: string;
+  expertEnvironmentGuide: string;
+  expertArtDirection: string;
   productName: string;
   niche: string;
   targetAudience: string;

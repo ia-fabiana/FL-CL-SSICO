@@ -1386,10 +1386,10 @@ export default function App() {
       { id: 'section-expert-info', label: 'Informações da Expert · História' },
       { id: 'section-product-info', label: 'Informações de Produto' },
       { id: 'section-roma-info', label: 'Informações de ROMA' },
-      { id: 'section-general-triggers', label: 'Gatilhos Mentais' },
       { id: 'section-avatar-info', label: 'Informações de Avatar' },
       { id: 'section-offer-info', label: 'Informações de Oferta' },
       { id: 'section-solution-info', label: 'Informações da Solução' },
+      { id: 'section-general-triggers', label: 'Gatilhos Mentais' },
       { id: 'section-timeline-overview', label: 'Linha do tempo' },
       { id: 'section-theme-list', label: 'Lista de temas' },
       { id: 'section-audience-creation', label: 'Criação de Audiência' },
@@ -2942,13 +2942,11 @@ export default function App() {
               ) : (
                 <div className="grid grid-cols-4 gap-4">
                   <div className="rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 1</p>
-                        <h4 className="mt-2 text-xl font-black text-slate-900">Temas vindos do avatar</h4>
-                        <p className="mt-2 text-sm text-slate-500">Multipla escolha: marque um ou mais temas.</p>
-                      </div>
-                      <div className="flex flex-wrap justify-end gap-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 1</p>
+                      <h4 className="mt-2 text-xl font-black text-slate-900">Temas vindos do avatar</h4>
+                      <p className="mt-2 text-sm text-slate-500">Multipla escolha: marque um ou mais temas.</p>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={selectAllThemes}

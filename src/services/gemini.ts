@@ -674,6 +674,7 @@ export async function generateTaskContentDraft(
 
 export async function generateAudienceSubTaskContent(
   data: LaunchData,
+  subTaskId: string,
   subTaskTitle: string,
   contentMode: 'text' | 'image' | 'both',
   imageSpec?: AudienceImageSpec,
@@ -709,13 +710,40 @@ LEGENDA (CAPTION) PARA O POST:
     : '';
 
   const expertKnowledgeBase = `
+Nome da expert: ${data.avatarName || 'nao informado'}
 Historia e posicionamento da expert: ${data.avatarStory || 'nao informado'}
 Nicho de atuacao: ${data.niche || 'nao informado'}
 Publico que ela atende: ${data.targetAudience || 'nao informado'}
 Problema que ela resolve: ${data.mainProblem || 'nao informado'}
 Transformacao / ROMA que ela entrega: ${data.mainBenefit || 'nao informado'}
 Produto / metodo: ${data.productName || 'nao informado'}
+Instagram @: ${data.expertInstagramHandle || 'nao informado'}
+Instagram URL: ${data.expertInstagramUrl || 'nao informado'}
+Facebook URL: ${data.expertFacebookUrl || 'nao informado'}
+YouTube URL: ${data.expertYoutubeUrl || 'nao informado'}
+Link principal da bio: ${data.expertLinkInBio || 'nao informado'}
 `.trim();
+
+  const taskOutputRule = subTaskId === 'ig-02'
+    ? `
+TAREFA ESPECIFICA (IG-02): revisar bio de Instagram.
+Entregue:
+1. Diagnostico da bio atual (pontos fortes e lacunas)
+2. Checklist objetivo: cargo, promessa, palavra-chave e link
+3. 3 versoes de bio prontas para copiar (curta, media e direta para conversao)
+4. Sugestao final de CTA para stories e destaque fixo
+5. Validacao final das redes informadas para mencionar no perfil
+`
+    : subTaskId === 'ig-04'
+    ? `
+TAREFA ESPECIFICA (IG-04): criar/atualizar post fixado apresentando o trabalho.
+Entregue:
+1. Estrutura do post fixado (headline, proposta, prova, CTA)
+2. Legenda final pronta
+3. Briefing visual alinhado ao formato solicitado e foto da expert
+4. CTA com @ da expert e link principal da bio
+`
+    : '';
 
   const prompt = `
 Voce e copywriter senior especialista em Instagram e Formula de Lancamento.
@@ -727,6 +755,7 @@ ${expertKnowledgeBase}
 TAREFA: ${subTaskTitle}
 ${imageBlock}
 ${textBlock}
+${taskOutputRule}
 
 REGRAS FINAIS:
 - O conteudo deve apresentar a EXPERT, nao o avatar/cliente.

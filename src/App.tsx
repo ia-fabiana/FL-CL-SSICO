@@ -48,6 +48,11 @@ const EMPTY_LAUNCH_DATA: LaunchData = {
   generalTriggers: '',
   launchType: 'classic',
   avatarName: '',
+  expertInstagramHandle: '',
+  expertInstagramUrl: '',
+  expertFacebookUrl: '',
+  expertYoutubeUrl: '',
+  expertLinkInBio: '',
   productName: '',
   niche: '',
   targetAudience: '',
@@ -181,7 +186,12 @@ const DEFAULT_AUDIENCE_DAYS: AudienceDay[] = [
         subTasks: [
           // Instagram
           { id: 'ig-01', title: 'Atualizar os stories em destaque (covers e conteúdo)', done: false },
-          { id: 'ig-02', title: 'Revisar a bio: cargo, promessa, palavra-chave e link', done: false },
+          {
+            id: 'ig-02',
+            title: 'Revisar a bio: cargo, promessa, palavra-chave e link',
+            done: false,
+            contentMode: 'text',
+          },
           { id: 'ig-03', title: 'Conferir o link na bio (criar ou ajustar Linktree/página)', done: false },
           {
             id: 'ig-04',

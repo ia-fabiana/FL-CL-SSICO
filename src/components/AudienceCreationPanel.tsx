@@ -27,6 +27,23 @@ const PLATFORM_CONFIG: Record<AudiencePlatform, { label: string; color: string; 
   },
 };
 
+const INSTAGRAM_HANDLE_RE = /^@[a-zA-Z0-9._]{1,30}$/;
+
+const isValidAbsoluteUrl = (value?: string): boolean => {
+  if (!value?.trim()) return false;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+const isValidInstagramUrl = (value?: string): boolean => {
+  if (!isValidAbsoluteUrl(value)) return false;
+  return /instagram\.com/i.test(value || '');
+};
+
 // ─── sub-task row ─────────────────────────────────────────────────────────────
 
 interface SubTaskRowProps {
@@ -45,9 +62,45 @@ function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskR
   const [copied, setCopied] = useState(false);
 
   const missingFields: string[] = [];
-  if (!launchData.productName) missingFields.push('Nome do produto');
-  if (!launchData.targetAudience) missingFields.push('Público-alvo');
-  if (!launchData.mainBenefit) missingFields.push('Benefício principal (ROMA)');
+  const formatErrors: string[] = [];
+
+  if (subTask.id === 'ig-02') {
+    if (!launchData.avatarName) missingFields.push('Nome da expert');
+    if (!launchData.niche) missingFields.push('Nicho');
+    if (!launchData.mainBenefit) missingFields.push('Promessa (ROMA)');
+    if (!launchData.expertInstagramHandle) missingFields.push('Instagram (@)');
+    if (!launchData.expertLinkInBio) missingFields.push('Link principal da bio');
+
+    if (launchData.expertInstagramHandle && !INSTAGRAM_HANDLE_RE.test(launchData.expertInstagramHandle.trim())) {
+      formatErrors.push('Instagram (@) inválido. Use formato @usuario.');
+    }
+    if (launchData.expertInstagramUrl && !isValidInstagramUrl(launchData.expertInstagramUrl)) {
+      formatErrors.push('URL do Instagram inválida.');
+    }
+    if (launchData.expertLinkInBio && !isValidAbsoluteUrl(launchData.expertLinkInBio)) {
+      formatErrors.push('Link principal da bio inválido.');
+    }
+  } else if (subTask.id === 'ig-04') {
+    if (!launchData.avatarName) missingFields.push('Nome da expert');
+    if (!launchData.avatarStory) missingFields.push('História da expert');
+    if (!launchData.niche) missingFields.push('Nicho');
+    if (!launchData.targetAudience) missingFields.push('Público-alvo');
+    if (!launchData.mainBenefit) missingFields.push('Promessa (ROMA)');
+    if (!launchData.productName) missingFields.push('Produto / método');
+    if (!launchData.expertInstagramHandle) missingFields.push('Instagram (@)');
+
+    if (launchData.expertInstagramHandle && !INSTAGRAM_HANDLE_RE.test(launchData.expertInstagramHandle.trim())) {
+      formatErrors.push('Instagram (@) inválido. Use formato @usuario.');
+    }
+    if (launchData.expertInstagramUrl && !isValidInstagramUrl(launchData.expertInstagramUrl)) {
+      formatErrors.push('URL do Instagram inválida.');
+    }
+  } else {
+    if (!launchData.productName) missingFields.push('Nome do produto');
+    if (!launchData.targetAudience) missingFields.push('Público-alvo');
+    if (!launchData.mainBenefit) missingFields.push('Benefício principal (ROMA)');
+  }
+
   const canGenerate = missingFields.length === 0;
 
   const handleGenerate = async () => {
@@ -55,11 +108,16 @@ function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskR
       setGenError(`Preencha o briefing antes de gerar: ${missingFields.join(', ')}.`);
       return;
     }
+    if (formatErrors.length > 0) {
+      setGenError(`Corrija os campos inválidos antes de gerar: ${formatErrors.join(' ')}`);
+      return;
+    }
     setGenError(null);
     setIsGenerating(true);
     try {
       const result = await generateAudienceSubTaskContent(
         launchData,
+        subTask.id,
         subTask.title,
         subTask.contentMode!,
         subTask.imageSpec,
@@ -168,6 +226,18 @@ function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskR
           {!canGenerate && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
               <span className="font-bold">Briefing incompleto:</span> preencha {missingFields.join(', ')} antes de gerar.
+            </div>
+          )}
+
+          {formatErrors.length > 0 && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+              <span className="font-bold">Ajustes de formato:</span> {formatErrors.join(' ')}
+            </div>
+          )}
+
+          {(subTask.id === 'ig-02' || subTask.id === 'ig-04') && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700">
+              Esta tarefa usa os dados da coluna esquerda: expert, nicho, ROMA, público, história e redes sociais.
             </div>
           )}
 

@@ -2,6 +2,11 @@ export type LaunchType = 'classic' | 'seed';
 
 export interface LaunchData {
   avatarName: string;
+  expertInstagramHandle: string;
+  expertInstagramUrl: string;
+  expertFacebookUrl: string;
+  expertYoutubeUrl: string;
+  expertLinkInBio: string;
   productName: string;
   niche: string;
   targetAudience: string;

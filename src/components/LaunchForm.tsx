@@ -7,6 +7,11 @@ const EMPTY_FORM: LaunchData = {
   generalTriggers: '',
   launchType: 'classic',
   avatarName: '',
+  expertInstagramHandle: '',
+  expertInstagramUrl: '',
+  expertFacebookUrl: '',
+  expertYoutubeUrl: '',
+  expertLinkInBio: '',
   productName: '',
   niche: '',
   targetAudience: '',
@@ -515,6 +520,78 @@ export default function LaunchForm({
                 data-gramm_editor="false"
                 data-enable-grammarly="false"
               />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Instagram (@)</label>
+                <input
+                  name="expertInstagramHandle"
+                  value={formData.expertInstagramHandle}
+                  onChange={handleChange}
+                  placeholder="Ex: @iafabianaoficial"
+                  className={baseFieldClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Instagram (URL)</label>
+                <input
+                  name="expertInstagramUrl"
+                  value={formData.expertInstagramUrl}
+                  onChange={handleChange}
+                  placeholder="Ex: https://www.instagram.com/iafabianaoficial/"
+                  className={baseFieldClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Facebook (URL)</label>
+                <input
+                  name="expertFacebookUrl"
+                  value={formData.expertFacebookUrl}
+                  onChange={handleChange}
+                  placeholder="Ex: https://www.facebook.com/suapagina"
+                  className={baseFieldClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">YouTube (URL)</label>
+                <input
+                  name="expertYoutubeUrl"
+                  value={formData.expertYoutubeUrl}
+                  onChange={handleChange}
+                  placeholder="Ex: https://www.youtube.com/@seucanal"
+                  className={baseFieldClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-700">Link principal da bio</label>
+                <input
+                  name="expertLinkInBio"
+                  value={formData.expertLinkInBio}
+                  onChange={handleChange}
+                  placeholder="Ex: https://seulink.com"
+                  className={baseFieldClass}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+              </div>
             </div>
 
             <div className="space-y-4">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { GuidanceEntry, GuidanceMap, LaunchData } from '../types';
 import { GuidedFieldKey, guidanceKeyForField } from '../guidance';
 import { Rocket, Target, Tag, Users, AlertCircle, Sparkles, Calendar, DollarSign, Check } from 'lucide-react';
@@ -612,6 +613,34 @@ export default function LaunchForm({
                   data-enable-grammarly="false"
                 />
               </div>
+
+              {formData.avatarStory.trim() && (
+                <div className="rounded-2xl border border-fuchsia-200 bg-white p-4 space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-500">
+                    Preview Markdown · Gatilhos rosa · Base azul
+                  </p>
+                  <div className="max-h-72 overflow-auto rounded-xl border border-slate-100 bg-slate-50 p-3">
+                    <ReactMarkdown
+                      components={{
+                        h1: ({ children }) => <h1 className="text-base font-black text-slate-900">{children}</h1>,
+                        h2: ({ children }) => <h2 className="mt-3 text-sm font-black text-slate-900">{children}</h2>,
+                        h3: ({ children }) => <h3 className="mt-2 text-xs font-black text-slate-900">{children}</h3>,
+                        p: ({ children }) => <p className="mt-2 text-sm leading-relaxed text-slate-700">{children}</p>,
+                        li: ({ children }) => <li className="text-sm text-slate-700">{children}</li>,
+                        strong: ({ children }) => (
+                          <span className="rounded-md bg-pink-100 px-1.5 py-0.5 font-black text-pink-700">{children}</span>
+                        ),
+                        code: ({ children }) => (
+                          <span className="rounded-md bg-sky-100 px-1.5 py-0.5 font-semibold text-sky-700">{children}</span>
+                        ),
+                      }}
+                    >
+                      {formData.avatarStory}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              )}
+
               {renderGuidance('avatarStory', 'História da Expert')}
             </div>
           </div>

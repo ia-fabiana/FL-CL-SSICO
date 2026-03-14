@@ -36,6 +36,13 @@ const getGuidedFieldInstruction = (field: GuidedFieldKey): string => {
     - Se houver gatilhos como autoridade, prova, similaridade, procedencia ou virada, eles precisam aparecer de forma perceptivel dentro da narrativa.
     - Nao entregue uma historia generica: preserve nomes, marcos, dores, conquistas, causa e transformacao sempre que forem informados.
     - Se algum ponto importante e a estrutura parecerem conflitantes, priorize conciliar os dois sem omitir fatos.
+    - Entregue em markdown.
+    - Todo gatilho mental usado no texto deve estar em **negrito** (isso vira rosa na interface).
+    - Todo trecho vindo da base de conhecimento deve estar em \`codigo inline\` (isso vira azul na interface).
+    - Se um trecho combinar gatilho e base, separe em duas partes proximas para manter as duas marcacoes.
+    - Ao final, inclua "## Mapa de marcacoes" com:
+      - "### Gatilhos mentais (rosa)" listando os gatilhos usados.
+      - "### Base de conhecimento (azul)" listando os pontos da base realmente utilizados.
     `;
   }
 
@@ -478,6 +485,21 @@ export async function generateGuidedFieldCopy(
   const context = getLaunchDataSnapshot(data);
   const hasKeyPoints = Boolean(guidance?.keyPoints?.trim());
   const hasFramework = Boolean(guidance?.framework?.trim());
+  const expertPreliminaryContext = `
+Nome da expert: ${data.avatarName || 'nao informado'}
+Historia atual da expert: ${data.avatarStory || 'nao informado'}
+Nicho: ${data.niche || 'nao informado'}
+Publico-alvo: ${data.targetAudience || 'nao informado'}
+Problema principal: ${data.mainProblem || 'nao informado'}
+ROMA / Beneficio principal: ${data.mainBenefit || 'nao informado'}
+Produto / metodo: ${data.productName || 'nao informado'}
+Instagram @: ${data.expertInstagramHandle || 'nao informado'}
+Instagram URL: ${data.expertInstagramUrl || 'nao informado'}
+Link principal da bio: ${data.expertLinkInBio || 'nao informado'}
+Base ampliada do avatar:
+${avatarKnowledgeBase(data)}
+  `.trim();
+
   const prompt = `
     VocÃª Ã© uma estrategista sÃªnior da FÃ³rmula de LanÃ§amento.
     Com base nos dados do briefing abaixo, reescreva o campo "${field}".
@@ -490,6 +512,9 @@ export async function generateGuidedFieldCopy(
     Estrutura, gatilhos ou frameworks desejados:
     ${guidance?.framework || 'NÃ£o fornecido'}
 
+    Base preliminar da expert e da audiencia (obrigatoria para este processamento):
+    ${field === 'avatarStory' ? expertPreliminaryContext : 'nao se aplica'}
+
     Dados do diagnÃ³stico:
     ${JSON.stringify(context, null, 2)}
 
@@ -498,7 +523,9 @@ export async function generateGuidedFieldCopy(
     Regras finais de execucao:
     - Gere um texto unico, direto e pronto para ser usado no campo alvo.
     - Use tom consultivo e evite repeticoes.
-    - Nao explique seu raciocinio, nao use listas e nao adicione observacoes fora do texto final.
+    - ${field === 'avatarStory'
+      ? 'Para avatarStory, use markdown e mantenha os titulos de apoio minimos (ex.: ## Historia).'
+      : 'Nao explique seu raciocinio, nao use listas e nao adicione observacoes fora do texto final.'}
     - ${hasKeyPoints || hasFramework
       ? 'Considere os pontos importantes e a estrutura/gatilhos como requisitos obrigatorios do resultado.'
       : 'Na ausencia de guidance extra, baseie-se somente no briefing informado.'}

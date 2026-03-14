@@ -35,10 +35,16 @@ interface SubTaskRowProps {
 
 function SubTaskRow({ subTask, onToggle }: SubTaskRowProps) {
   return (
-    <li className="flex items-start gap-3 py-2">
+    <li
+      className="flex cursor-pointer items-start gap-3 rounded-xl px-2 py-2 transition hover:bg-slate-50"
+      onClick={onToggle}
+    >
       <button
         type="button"
-        onClick={onToggle}
+        onClick={event => {
+          event.stopPropagation();
+          onToggle();
+        }}
         aria-label={subTask.done ? 'Desmarcar sub-tarefa' : 'Marcar sub-tarefa como feita'}
         className={`mt-0.5 h-5 w-5 flex-shrink-0 rounded-md border-2 transition ${
           subTask.done
@@ -91,15 +97,19 @@ function TaskCard({ task, onToggleTask, onToggleSubTask }: TaskCardProps) {
 
   return (
     <div
+      onClick={onToggleTask}
       className={`rounded-2xl border-2 transition-all duration-200 ${
         task.done ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-white'
-      } p-4 shadow-[0_4px_12px_rgba(15,23,42,0.06)]`}
+      } cursor-pointer p-4 shadow-[0_4px_12px_rgba(15,23,42,0.06)]`}
     >
       {/* header row */}
       <div className="flex items-start gap-3">
         <button
           type="button"
-          onClick={onToggleTask}
+          onClick={event => {
+            event.stopPropagation();
+            onToggleTask();
+          }}
           aria-label={task.done ? 'Reabrir tarefa' : 'Marcar tarefa como concluída'}
           className={`mt-0.5 h-6 w-6 flex-shrink-0 rounded-lg border-2 transition ${
             task.done
@@ -143,7 +153,10 @@ function TaskCard({ task, onToggleTask, onToggleSubTask }: TaskCardProps) {
               </span>
               <button
                 type="button"
-                onClick={() => setExpanded(v => !v)}
+                onClick={event => {
+                  event.stopPropagation();
+                  setExpanded(v => !v);
+                }}
                 className="text-[10px] font-black uppercase tracking-[0.15em] text-sky-600 hover:text-sky-800"
               >
                 {expanded ? 'ocultar ▲' : 'expandir ▼'}

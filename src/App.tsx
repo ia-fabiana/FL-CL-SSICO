@@ -19,6 +19,7 @@ import { IA_FABIANA_BRIEFING } from './briefingDefaults';
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   limit,
@@ -2776,6 +2777,29 @@ export default function App() {
     }
   };
 
+  const handleDeleteRootScriptVersion = async (version: RootScriptVersion) => {
+    try {
+      const ensuredId = await ensureBriefingDocument();
+      await deleteDoc(doc(db, 'launchBriefings', ensuredId, 'rootScripts', version.id));
+
+      const isActiveVersion = currentRootScriptVersionId === version.id;
+      if (isActiveVersion) {
+        setRootScriptDraft('');
+        setRootScriptApproved(false);
+        setRootHeadlines([]);
+        setIsEditingRootScript(false);
+        setCurrentRootScriptVersionId(null);
+        setRootHeadlinesFeedback('Card excluido do Scrumban.');
+        await persistRootScriptState('', false, [], null);
+      }
+
+      await loadRootScriptVersions(ensuredId);
+    } catch (err) {
+      console.error('Erro ao excluir card do Scrumban', err);
+      setError('Nao foi possivel excluir o card do Scrumban.');
+    }
+  };
+
   const handleClearRootScript = async () => {
     setRootScriptDraft('');
     setRootScriptApproved(false);
@@ -3932,6 +3956,13 @@ export default function App() {
                                         Mover para {nextColumn.label}
                                       </button>
                                     )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteRootScriptVersion(version)}
+                                      className="rounded-full border border-rose-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-rose-600 hover:border-rose-300 hover:bg-rose-50"
+                                    >
+                                      Excluir
+                                    </button>
                                   </div>
                                 </div>
                               ))

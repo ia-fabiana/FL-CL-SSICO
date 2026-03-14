@@ -3439,54 +3439,91 @@ export default function App() {
                       </div>
 
                       <div className="mt-5 space-y-4 max-h-[840px] overflow-y-auto pr-1">
-                        {avatarThemeGroups.filter(group => activeThemeCategory === 'all' || group.key === activeThemeCategory).map(group => {
-                          const style = THEME_VISUAL_STYLES[group.key];
-                          return (
-                          <div key={group.key} className={`rounded-2xl border p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] ${style.cardClassName}`}>
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <p className={`text-sm font-black uppercase tracking-[0.24em] ${style.titleClassName}`}>{group.label}</p>
-                                <p className={`mt-1 text-xs ${style.angleClassName}`}>{group.angle}</p>
-                              </div>
-                              <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${style.badgeClassName}`}>
-                                {group.items.length}
-                              </span>
-                            </div>
-                            <div className="mt-3 space-y-2">
-                              {group.items.map(item => {
-                                const isActive = selectedThemeIds.includes(item.id);
-                                return (
-                                  <button
-                                    key={item.id}
-                                    type="button"
-                                    onClick={() => toggleThemeSelection(item.id)}
-                                    className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
-                                      isActive
-                                        ? style.activeButtonClassName
-                                        : style.inactiveButtonClassName
-                                    }`}
-                                  >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div>
-                                        <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                                        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                                          Origem: {item.sourceLabel}
-                                        </p>
-                                      </div>
-                                      <span
-                                        className={`mt-0.5 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                                          isActive ? style.statusActiveClassName : 'bg-slate-100 text-slate-400'
-                                        }`}
-                                      >
-                                        {isActive ? 'Marcado' : 'Livre'}
-                                      </span>
+                        {activeThemeCategory === 'all' ? (
+                          <div className="space-y-2">
+                            {avatarThemeItems.map(item => {
+                              const isActive = selectedThemeIds.includes(item.id);
+                              const style = THEME_VISUAL_STYLES[item.sourceKey];
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => toggleThemeSelection(item.id)}
+                                  className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                                    isActive
+                                      ? style.activeButtonClassName
+                                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                        Origem: {item.sourceLabel}
+                                      </p>
                                     </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                                    <span
+                                      className={`mt-0.5 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
+                                        isActive ? style.statusActiveClassName : 'bg-slate-100 text-slate-400'
+                                      }`}
+                                    >
+                                      {isActive ? 'Marcado' : 'Livre'}
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
-                        )})}
+                        ) : (
+                          avatarThemeGroups.filter(group => group.key === activeThemeCategory).map(group => {
+                            const style = THEME_VISUAL_STYLES[group.key];
+                            return (
+                            <div key={group.key} className={`rounded-2xl border p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] ${style.cardClassName}`}>
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className={`text-sm font-black uppercase tracking-[0.24em] ${style.titleClassName}`}>{group.label}</p>
+                                  <p className={`mt-1 text-xs ${style.angleClassName}`}>{group.angle}</p>
+                                </div>
+                                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${style.badgeClassName}`}>
+                                  {group.items.length}
+                                </span>
+                              </div>
+                              <div className="mt-3 space-y-2">
+                                {group.items.map(item => {
+                                  const isActive = selectedThemeIds.includes(item.id);
+                                  return (
+                                    <button
+                                      key={item.id}
+                                      type="button"
+                                      onClick={() => toggleThemeSelection(item.id)}
+                                      className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                                        isActive
+                                          ? style.activeButtonClassName
+                                          : style.inactiveButtonClassName
+                                      }`}
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                          <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                                          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                            Origem: {item.sourceLabel}
+                                          </p>
+                                        </div>
+                                        <span
+                                          className={`mt-0.5 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
+                                            isActive ? style.statusActiveClassName : 'bg-slate-100 text-slate-400'
+                                          }`}
+                                        >
+                                          {isActive ? 'Marcado' : 'Livre'}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        }))}
                       </div>
                     </div>
                   )}

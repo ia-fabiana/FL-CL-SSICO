@@ -959,6 +959,7 @@ export default function App() {
   const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>([]);
   const [selectedEditorialLineIds, setSelectedEditorialLineIds] = useState<string[]>([]);
   const [selectedQuestionPrompts, setSelectedQuestionPrompts] = useState<ThemeQuestionSelectionMap>({});
+  const [activeThemeWorkspace, setActiveThemeWorkspace] = useState<'column-1' | 'column-2' | 'column-3' | 'column-4'>('column-1');
   const [rootScriptDurationMinutes, setRootScriptDurationMinutes] = useState<number>(DEFAULT_SCRIPT_DURATION_MINUTES);
   const [rootScriptDraft, setRootScriptDraft] = useState('');
   const [rootScriptApproved, setRootScriptApproved] = useState(false);
@@ -2940,373 +2941,409 @@ export default function App() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 1</p>
-                      <h4 className="mt-2 text-xl font-black text-slate-900">Temas vindos do avatar</h4>
-                      <p className="mt-2 text-sm text-slate-500">Multipla escolha: marque um ou mais temas.</p>
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                <div className="space-y-4">
+                  <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+                    <div className="flex min-w-max gap-2">
+                      {[
+                        { id: 'column-1', label: 'Coluna 1', title: 'Temas', count: `${selectedThemes.length}/${avatarThemeItems.length}` },
+                        { id: 'column-2', label: 'Coluna 2', title: 'Linha editorial', count: `${selectedEditorialLines.length}/${EDITORIAL_LINE_OPTIONS.length}` },
+                        { id: 'column-3', label: 'Coluna 3', title: 'Perguntas', count: `${selectedQuestionPromptBlocks.length}` },
+                        { id: 'column-4', label: 'Coluna 4', title: 'Estrutura', count: `${selectedQuestionPromptBlocks.length}` },
+                      ].map(item => {
+                        const isActive = activeThemeWorkspace === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setActiveThemeWorkspace(item.id as 'column-1' | 'column-2' | 'column-3' | 'column-4')}
+                            className={`flex min-w-[170px] flex-col rounded-2xl border px-4 py-3 text-left transition ${
+                              isActive
+                                ? 'border-sky-300 bg-sky-50 shadow-[0_10px_20px_rgba(14,165,233,0.12)]'
+                                : 'border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white'
+                            }`}
+                          >
+                            <span className={`text-[10px] font-black uppercase tracking-[0.25em] ${isActive ? 'text-sky-600' : 'text-slate-400'}`}>{item.label}</span>
+                            <span className="mt-2 text-sm font-black text-slate-900">{item.title}</span>
+                            <span className="mt-1 text-xs font-semibold text-slate-500">{item.count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {activeThemeWorkspace === 'column-1' && (
+                    <div className="rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 1</p>
+                        <h4 className="mt-2 text-xl font-black text-slate-900">Temas vindos do avatar</h4>
+                        <p className="mt-2 text-sm text-slate-500">Multipla escolha: marque um ou mais temas.</p>
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={selectAllThemes}
+                            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-sky-200 hover:text-sky-600"
+                          >
+                            Marcar todos
+                          </button>
+                          <button
+                            type="button"
+                            onClick={clearThemeSelections}
+                            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                          >
+                            Limpar
+                          </button>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+                            {selectedThemes.length}/{avatarThemeItems.length}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-5 space-y-4 max-h-[840px] overflow-y-auto pr-1">
+                        {avatarThemeGroups.map(group => {
+                          const style = THEME_VISUAL_STYLES[group.key];
+                          return (
+                          <div key={group.key} className={`rounded-2xl border p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] ${style.cardClassName}`}>
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className={`text-sm font-black uppercase tracking-[0.24em] ${style.titleClassName}`}>{group.label}</p>
+                                <p className={`mt-1 text-xs ${style.angleClassName}`}>{group.angle}</p>
+                              </div>
+                              <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${style.badgeClassName}`}>
+                                {group.items.length}
+                              </span>
+                            </div>
+                            <div className="mt-3 space-y-2">
+                              {group.items.map(item => {
+                                const isActive = selectedThemeIds.includes(item.id);
+                                return (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => toggleThemeSelection(item.id)}
+                                    className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                                      isActive
+                                        ? style.activeButtonClassName
+                                        : style.inactiveButtonClassName
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div>
+                                        <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                                        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                          Origem: {item.sourceLabel}
+                                        </p>
+                                      </div>
+                                      <span
+                                        className={`mt-0.5 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
+                                          isActive ? style.statusActiveClassName : 'bg-slate-100 text-slate-400'
+                                        }`}
+                                      >
+                                        {isActive ? 'Marcado' : 'Livre'}
+                                      </span>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )})}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeThemeWorkspace === 'column-2' && (
+                    <div className="rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 2</p>
+                        <h4 className="mt-2 text-xl font-black text-slate-900">Escolher linha editorial</h4>
+                        <p className="mt-2 text-sm text-slate-500">
+                          Multipla escolha: marque os formatos que melhor combinam com os temas e com a fase do lancamento.
+                        </p>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={selectAllThemes}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-sky-200 hover:text-sky-600"
+                          onClick={selectAllEditorialLines}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-indigo-200 hover:text-indigo-600"
                         >
-                          Marcar todos
+                          Marcar todas
                         </button>
                         <button
                           type="button"
-                          onClick={clearThemeSelections}
+                          onClick={clearEditorialLineSelections}
                           className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-slate-300 hover:text-slate-700"
                         >
                           Limpar
                         </button>
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-                          {selectedThemes.length}/{avatarThemeItems.length}
+                          {selectedEditorialLines.length}/{EDITORIAL_LINE_OPTIONS.length}
                         </span>
                       </div>
-                    </div>
-                    <div className="mt-5 space-y-4 max-h-[840px] overflow-y-auto pr-1">
-                      {avatarThemeGroups.map(group => {
-                        const style = THEME_VISUAL_STYLES[group.key];
-                        return (
-                        <div key={group.key} className={`rounded-2xl border p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] ${style.cardClassName}`}>
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className={`text-sm font-black uppercase tracking-[0.24em] ${style.titleClassName}`}>{group.label}</p>
-                              <p className={`mt-1 text-xs ${style.angleClassName}`}>{group.angle}</p>
-                            </div>
-                            <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${style.badgeClassName}`}>
-                              {group.items.length}
-                            </span>
-                          </div>
-                          <div className="mt-3 space-y-2">
-                            {group.items.map(item => {
-                              const isActive = selectedThemeIds.includes(item.id);
-                              return (
-                                <button
-                                  key={item.id}
-                                  type="button"
-                                  onClick={() => toggleThemeSelection(item.id)}
-                                  className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
-                                    isActive
-                                      ? style.activeButtonClassName
-                                      : style.inactiveButtonClassName
+                      <div className="mt-5 space-y-3 max-h-[520px] overflow-y-auto pr-1">
+                        {EDITORIAL_LINE_OPTIONS.map(option => {
+                          const isActive = selectedEditorialLineIds.includes(option.id);
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => toggleEditorialLineSelection(option.id)}
+                              className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
+                                isActive
+                                  ? 'border-indigo-300 bg-indigo-50 shadow-[0_10px_20px_rgba(99,102,241,0.12)]'
+                                  : 'border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">{option.title}</p>
+                                  <p className="mt-2 text-sm text-slate-600">{option.description}</p>
+                                </div>
+                                <span
+                                  className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
+                                    isActive ? 'bg-indigo-200 text-indigo-800' : 'bg-slate-100 text-slate-400'
                                   }`}
                                 >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                                        Origem: {item.sourceLabel}
-                                      </p>
-                                    </div>
-                                    <span
-                                      className={`mt-0.5 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                                        isActive ? style.statusActiveClassName : 'bg-slate-100 text-slate-400'
-                                      }`}
-                                    >
-                                      {isActive ? 'Marcado' : 'Livre'}
-                                    </span>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )})}
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 2</p>
-                      <h4 className="mt-2 text-xl font-black text-slate-900">Escolher linha editorial</h4>
-                      <p className="mt-2 text-sm text-slate-500">
-                        Multipla escolha: marque os formatos que melhor combinam com os temas e com a fase do lancamento.
-                      </p>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={selectAllEditorialLines}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-indigo-200 hover:text-indigo-600"
-                      >
-                        Marcar todas
-                      </button>
-                      <button
-                        type="button"
-                        onClick={clearEditorialLineSelections}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                      >
-                        Limpar
-                      </button>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-                        {selectedEditorialLines.length}/{EDITORIAL_LINE_OPTIONS.length}
-                      </span>
-                    </div>
-                    <div className="mt-5 space-y-3 max-h-[520px] overflow-y-auto pr-1">
-                      {EDITORIAL_LINE_OPTIONS.map(option => {
-                        const isActive = selectedEditorialLineIds.includes(option.id);
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            onClick={() => toggleEditorialLineSelection(option.id)}
-                            className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
-                              isActive
-                                ? 'border-indigo-300 bg-indigo-50 shadow-[0_10px_20px_rgba(99,102,241,0.12)]'
-                                : 'border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">{option.title}</p>
-                                <p className="mt-2 text-sm text-slate-600">{option.description}</p>
+                                  {isActive ? 'Marcada' : 'Livre'}
+                                </span>
                               </div>
-                              <span
-                                className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                                  isActive ? 'bg-indigo-200 text-indigo-800' : 'bg-slate-100 text-slate-400'
-                                }`}
-                              >
-                                {isActive ? 'Marcada' : 'Livre'}
-                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {selectedEditorialLines.length > 0 && (
+                        <div className="mt-5 space-y-3">
+                          {selectedEditorialLines.map(option => (
+                            <div key={option.id} className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
+                              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-500">Leitura da linha</p>
+                              <h5 className="mt-2 text-lg font-black text-slate-900">{option.title}</h5>
+                              <p className="mt-2 text-sm text-slate-600">{option.benefits}</p>
+                              <p className="mt-3 text-sm text-slate-600">
+                                <span className="font-semibold text-slate-900">Como fazer:</span> {option.howTo}
+                              </p>
+                              <p className="mt-3 text-sm text-slate-600">
+                                <span className="font-semibold text-slate-900">Melhor uso:</span> {option.bestUse}
+                              </p>
                             </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {selectedEditorialLines.length > 0 && (
-                      <div className="mt-5 space-y-3">
-                        {selectedEditorialLines.map(option => (
-                          <div key={option.id} className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-500">Leitura da linha</p>
-                            <h5 className="mt-2 text-lg font-black text-slate-900">{option.title}</h5>
-                            <p className="mt-2 text-sm text-slate-600">{option.benefits}</p>
-                            <p className="mt-3 text-sm text-slate-600">
-                              <span className="font-semibold text-slate-900">Como fazer:</span> {option.howTo}
-                            </p>
-                            <p className="mt-3 text-sm text-slate-600">
-                              <span className="font-semibold text-slate-900">Melhor uso:</span> {option.bestUse}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-5 rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 3</p>
-                      <h4 className="mt-2 text-xl font-black text-slate-900">Cardapio de perguntas</h4>
-                      <p className="mt-2 text-sm text-slate-500">
-                        Monte as perguntas do roteiro para alimentar a estrutura e o script final.
-                      </p>
-                    </div>
-
-                    {selectedThemes.length > 0 || selectedEditorialLines.length > 0 ? (
-                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">Selecao ativa</p>
-                        <div className="mt-3">
-                          <p className="text-sm font-semibold text-slate-900">Temas marcados</p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {selectedThemes.length > 0 ? (
-                              selectedThemes.map(theme => (
-                                <span
-                                  key={theme.id}
-                                  className="rounded-full bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-emerald-700"
-                                >
-                                  {theme.title}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-sm text-slate-500">Nenhum tema marcado ainda.</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-4">
-                          <p className="text-sm font-semibold text-slate-900">Linhas editoriais marcadas</p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {selectedEditorialLines.length > 0 ? (
-                              selectedEditorialLines.map(line => (
-                                <span
-                                  key={line.id}
-                                  className="rounded-full bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-indigo-700"
-                                >
-                                  {line.title}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-sm text-slate-500">Nenhuma linha editorial marcada ainda.</span>
-                            )}
-                          </div>
-                        </div>
-                        {launchData?.avatarSummary && (
-                          <p className="mt-3 rounded-2xl bg-white/80 px-3 py-3 text-sm text-slate-600">
-                            <span className="font-semibold text-slate-900">Resumo do avatar:</span> {launchData.avatarSummary}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-4 text-sm text-slate-500">
-                        Marque um ou mais temas e uma ou mais linhas editoriais para montar o roteiro.
-                      </div>
-                    )}
-
-                    <div className="mt-5 space-y-4 max-h-[560px] overflow-y-auto pr-1">
-                      {selectedQuestionPromptBlocks.length > 0 ? (
-                        selectedQuestionPromptBlocks.map(block => (
-                          <div key={block.theme.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Tema ativo</p>
-                            <h5 className="mt-2 text-sm font-black uppercase tracking-[0.2em] text-slate-900">{block.theme.title}</h5>
-
-                            <div className="mt-3 space-y-3">
-                              {block.sections.map(section => (
-                                <div key={`${block.theme.id}-${section.id}`} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
-                                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{section.title}</p>
-                                  <div className="mt-3 grid gap-2">
-                                    {section.prompts.map(prompt => (
-                                      <button
-                                        key={`${block.theme.id}-${section.id}-${prompt}`}
-                                        type="button"
-                                        onClick={() => toggleQuestionPromptSelection(block.theme.id, section.id, prompt)}
-                                        className={`w-full rounded-xl border px-3 py-2 text-left transition ${
-                                          section.selectedPrompts.includes(prompt)
-                                            ? 'border-indigo-300 bg-indigo-50 text-indigo-900 shadow-[0_8px_16px_rgba(99,102,241,0.12)]'
-                                            : 'border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50'
-                                        }`}
-                                      >
-                                        <div className="flex items-start justify-between gap-3">
-                                          <span>{prompt}</span>
-                                          <span
-                                            className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                                              section.selectedPrompts.includes(prompt)
-                                                ? 'bg-indigo-200 text-indigo-800'
-                                                : 'bg-slate-100 text-slate-400'
-                                            }`}
-                                          >
-                                            {section.selectedPrompts.includes(prompt) ? 'Escolhida' : 'Livre'}
-                                          </span>
-                                        </div>
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
-                          O cardapio de perguntas aparece quando pelo menos um tema for marcado.
+                          ))}
                         </div>
                       )}
                     </div>
-                  </div>
+                  )}
 
-                  <div className="space-y-5 rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 4</p>
-                      <h4 className="mt-2 text-xl font-black text-slate-900">Estrutura de roteiro</h4>
-                      <p className="mt-2 text-sm text-slate-500">
-                        Estruture o roteiro por tema marcando as perguntas em cada bloco.
-                      </p>
-                    </div>
+                  {activeThemeWorkspace === 'column-3' && (
+                    <div className="space-y-5 rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 3</p>
+                        <h4 className="mt-2 text-xl font-black text-slate-900">Cardapio de perguntas</h4>
+                        <p className="mt-2 text-sm text-slate-500">
+                          Monte as perguntas do roteiro para alimentar a estrutura e o script final.
+                        </p>
+                      </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Estrutura de roteiro</p>
-                      <div className="mt-4 space-y-4">
+                      {selectedThemes.length > 0 || selectedEditorialLines.length > 0 ? (
+                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">Selecao ativa</p>
+                          <div className="mt-3">
+                            <p className="text-sm font-semibold text-slate-900">Temas marcados</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {selectedThemes.length > 0 ? (
+                                selectedThemes.map(theme => (
+                                  <span
+                                    key={theme.id}
+                                    className="rounded-full bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-emerald-700"
+                                  >
+                                    {theme.title}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-sm text-slate-500">Nenhum tema marcado ainda.</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-sm font-semibold text-slate-900">Linhas editoriais marcadas</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {selectedEditorialLines.length > 0 ? (
+                                selectedEditorialLines.map(line => (
+                                  <span
+                                    key={line.id}
+                                    className="rounded-full bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-indigo-700"
+                                  >
+                                    {line.title}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-sm text-slate-500">Nenhuma linha editorial marcada ainda.</span>
+                              )}
+                            </div>
+                          </div>
+                          {launchData?.avatarSummary && (
+                            <p className="mt-3 rounded-2xl bg-white/80 px-3 py-3 text-sm text-slate-600">
+                              <span className="font-semibold text-slate-900">Resumo do avatar:</span> {launchData.avatarSummary}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-4 text-sm text-slate-500">
+                          Marque um ou mais temas e uma ou mais linhas editoriais para montar o roteiro.
+                        </div>
+                      )}
+
+                      <div className="mt-5 space-y-4 max-h-[560px] overflow-y-auto pr-1">
                         {selectedQuestionPromptBlocks.length > 0 ? (
-                          selectedQuestionPromptBlocks.map(block => {
-                            const contextPrompt = block.sections.find(section => section.id === 'contexto')?.selectedPrompts[0];
-                            const benefitPrompt = block.sections.find(section => section.id === 'beneficios')?.selectedPrompts[0];
-                            const howPrompt = block.sections.find(section => section.id === 'como-fazer')?.selectedPrompts[0];
-                            const extraPrompts = block.sections
-                              .filter(section => !section.isRequired)
-                              .flatMap(section => section.selectedPrompts.map(prompt => `${section.title}: ${prompt}`));
+                          selectedQuestionPromptBlocks.map(block => (
+                            <div key={block.theme.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Tema ativo</p>
+                              <h5 className="mt-2 text-sm font-black uppercase tracking-[0.2em] text-slate-900">{block.theme.title}</h5>
 
-                            return (
-                              <div
-                                key={block.theme.id}
-                                className="rounded-2xl border border-white bg-white p-4"
-                              >
-                                <h5 className="text-base font-black text-slate-900">Aplicacao para: {block.theme.title}</h5>
-                                <div className="mt-3 space-y-3">
-                                  {SCRIPT_STRUCTURE_STEPS.map(step => (
-                                    <div key={`${block.theme.id}-${step.id}`} className="rounded-2xl bg-slate-50 p-4">
-                                      <h6 className="text-sm font-black text-slate-900">{step.title}</h6>
-                                      <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                                        {step.id === 'introducao' && step.items.map(item => (
-                                          <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
-                                            {item}
-                                          </li>
-                                        ))}
-                                        {step.id === 'contexto' && (
-                                          <>
-                                            <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
-                                              Pergunta guia escolhida: {contextPrompt ?? 'Escolha 1 pergunta de Contexto no cardapio.'}
-                                            </li>
-                                            {step.items.map(item => (
-                                              <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
-                                                {item.replace('esse tema', block.theme.title)}
-                                              </li>
-                                            ))}
-                                          </>
-                                        )}
-                                        {step.id === 'beneficios' && (
-                                          <>
-                                            <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
-                                              Pergunta guia escolhida: {benefitPrompt ?? 'Escolha 1 pergunta de Beneficios no cardapio.'}
-                                            </li>
-                                            {step.items.map(item => (
-                                              <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
-                                                {item.replace('esse tema', block.theme.title)}
-                                              </li>
-                                            ))}
-                                          </>
-                                        )}
-                                        {step.id === 'como' && (
-                                          <>
-                                            <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
-                                              Pergunta guia escolhida: {howPrompt ?? 'Escolha 1 pergunta de Como fazer no cardapio.'}
-                                            </li>
-                                            {step.items.map(item => (
-                                              <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
-                                                {item.replace('esse tema', block.theme.title)}
-                                              </li>
-                                            ))}
-                                          </>
-                                        )}
-                                      </ul>
+                              <div className="mt-3 space-y-3">
+                                {block.sections.map(section => (
+                                  <div key={`${block.theme.id}-${section.id}`} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{section.title}</p>
+                                    <div className="mt-3 grid gap-2">
+                                      {section.prompts.map(prompt => (
+                                        <button
+                                          key={`${block.theme.id}-${section.id}-${prompt}`}
+                                          type="button"
+                                          onClick={() => toggleQuestionPromptSelection(block.theme.id, section.id, prompt)}
+                                          className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                                            section.selectedPrompts.includes(prompt)
+                                              ? 'border-indigo-300 bg-indigo-50 text-indigo-900 shadow-[0_8px_16px_rgba(99,102,241,0.12)]'
+                                              : 'border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50'
+                                          }`}
+                                        >
+                                          <div className="flex items-start justify-between gap-3">
+                                            <span>{prompt}</span>
+                                            <span
+                                              className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
+                                                section.selectedPrompts.includes(prompt)
+                                                  ? 'bg-indigo-200 text-indigo-800'
+                                                  : 'bg-slate-100 text-slate-400'
+                                              }`}
+                                            >
+                                              {section.selectedPrompts.includes(prompt) ? 'Escolhida' : 'Livre'}
+                                            </span>
+                                          </div>
+                                        </button>
+                                      ))}
                                     </div>
-                                  ))}
-
-                                  {extraPrompts.length > 0 && (
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                      <h6 className="text-sm font-black text-slate-900">5. Elementos complementares</h6>
-                                      <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                                        {extraPrompts.map(item => (
-                                          <li key={`${block.theme.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
-                                            {item}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                </div>
+                                  </div>
+                                ))}
                               </div>
-                            );
-                          })
+                            </div>
+                          ))
                         ) : (
                           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
-                            A estrutura aparece quando houver ao menos um tema marcado.
+                            O cardapio de perguntas aparece quando pelo menos um tema for marcado.
                           </div>
                         )}
                       </div>
                     </div>
+                  )}
 
-                  </div>
+                  {activeThemeWorkspace === 'column-4' && (
+                    <div className="space-y-5 rounded-3xl border-2 border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 4</p>
+                        <h4 className="mt-2 text-xl font-black text-slate-900">Estrutura de roteiro</h4>
+                        <p className="mt-2 text-sm text-slate-500">
+                          Estruture o roteiro por tema marcando as perguntas em cada bloco.
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Estrutura de roteiro</p>
+                        <div className="mt-4 space-y-4">
+                          {selectedQuestionPromptBlocks.length > 0 ? (
+                            selectedQuestionPromptBlocks.map(block => {
+                              const contextPrompt = block.sections.find(section => section.id === 'contexto')?.selectedPrompts[0];
+                              const benefitPrompt = block.sections.find(section => section.id === 'beneficios')?.selectedPrompts[0];
+                              const howPrompt = block.sections.find(section => section.id === 'como-fazer')?.selectedPrompts[0];
+                              const extraPrompts = block.sections
+                                .filter(section => !section.isRequired)
+                                .flatMap(section => section.selectedPrompts.map(prompt => `${section.title}: ${prompt}`));
+
+                              return (
+                                <div
+                                  key={block.theme.id}
+                                  className="rounded-2xl border border-white bg-white p-4"
+                                >
+                                  <h5 className="text-base font-black text-slate-900">Aplicacao para: {block.theme.title}</h5>
+                                  <div className="mt-3 space-y-3">
+                                    {SCRIPT_STRUCTURE_STEPS.map(step => (
+                                      <div key={`${block.theme.id}-${step.id}`} className="rounded-2xl bg-slate-50 p-4">
+                                        <h6 className="text-sm font-black text-slate-900">{step.title}</h6>
+                                        <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                                          {step.id === 'introducao' && step.items.map(item => (
+                                            <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
+                                              {item}
+                                            </li>
+                                          ))}
+                                          {step.id === 'contexto' && (
+                                            <>
+                                              <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
+                                                Pergunta guia escolhida: {contextPrompt ?? 'Escolha 1 pergunta de Contexto no cardapio.'}
+                                              </li>
+                                              {step.items.map(item => (
+                                                <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
+                                                  {item.replace('esse tema', block.theme.title)}
+                                                </li>
+                                              ))}
+                                            </>
+                                          )}
+                                          {step.id === 'beneficios' && (
+                                            <>
+                                              <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
+                                                Pergunta guia escolhida: {benefitPrompt ?? 'Escolha 1 pergunta de Beneficios no cardapio.'}
+                                              </li>
+                                              {step.items.map(item => (
+                                                <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
+                                                  {item.replace('esse tema', block.theme.title)}
+                                                </li>
+                                              ))}
+                                            </>
+                                          )}
+                                          {step.id === 'como' && (
+                                            <>
+                                              <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
+                                                Pergunta guia escolhida: {howPrompt ?? 'Escolha 1 pergunta de Como fazer no cardapio.'}
+                                              </li>
+                                              {step.items.map(item => (
+                                                <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
+                                                  {item.replace('esse tema', block.theme.title)}
+                                                </li>
+                                              ))}
+                                            </>
+                                          )}
+                                        </ul>
+                                      </div>
+                                    ))}
+
+                                    {extraPrompts.length > 0 && (
+                                      <div className="rounded-2xl bg-slate-50 p-4">
+                                        <h6 className="text-sm font-black text-slate-900">5. Elementos complementares</h6>
+                                        <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                                          {extraPrompts.map(item => (
+                                            <li key={`${block.theme.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
+                                              {item}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
+                              A estrutura aparece quando houver ao menos um tema marcado.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

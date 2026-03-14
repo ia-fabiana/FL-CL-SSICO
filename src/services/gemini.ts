@@ -714,6 +714,7 @@ export async function generateAudienceSubTaskContent(
 ): Promise<string> {
   const wantsImage = contentMode === 'image' || contentMode === 'both';
   const wantsText = contentMode === 'text' || contentMode === 'both';
+  const isSpecificInstagramTask = subTaskId === 'ig-02' || subTaskId === 'ig-04';
 
   const imageBlock = wantsImage && imageSpec
     ? `
@@ -731,13 +732,21 @@ Descreva:
     : '';
 
   const textBlock = wantsText
-    ? `
+    ? isSpecificInstagramTask
+      ? `
 LEGENDA (CAPTION) PARA O POST:
 - Hook de abertura forte (1–2 linhas que param o scroll)
 - Apresentação: quem é, o que faz, para quem, qual a transformação entregue
 - Prova ou gatilho de autoridade
 - CTA claro (ex: "Salve este post", "Comenta aqui", "Link na bio")
 - Hashtags relevantes ao nicho (8–12 hashtags no final)
+`
+      : `
+PLANO OPERACIONAL DA TAREFA:
+- Diagnóstico rápido do item
+- Passo a passo prático para executar hoje
+- Modelo de texto/script pronto para usar (se aplicável)
+- Checklist final de validação (o que precisa estar pronto)
 `
     : '';
 

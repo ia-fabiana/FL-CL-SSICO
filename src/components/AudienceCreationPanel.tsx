@@ -54,7 +54,9 @@ interface SubTaskRowProps {
 }
 
 function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskRowProps) {
-  const hasContentUI = Boolean(subTask.contentMode);
+  const effectiveContentMode: 'text' | 'image' | 'both' =
+    subTask.contentMode ?? (subTask.id === 'ig-04' ? 'both' : 'text');
+  const hasContentUI = true;
   const [contentOpen, setContentOpen] = useState(false);
   const [draft, setDraft] = useState(subTask.contentDraft ?? '');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -119,7 +121,7 @@ function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskR
         launchData,
         subTask.id,
         subTask.title,
-        subTask.contentMode!,
+        effectiveContentMode,
         subTask.imageSpec,
         subTask.expertPhotoRequired
       );
@@ -175,15 +177,13 @@ function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskR
             {subTask.title}
           </span>
 
-          {hasContentUI && (
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); setContentOpen(v => !v); }}
-              className="flex-shrink-0 rounded-full border border-pink-200 bg-pink-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.15em] text-pink-600 hover:bg-pink-100"
-            >
-              {contentOpen ? 'fechar ▲' : '✨ gerar ▼'}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); setContentOpen(v => !v); }}
+            className="flex-shrink-0 rounded-full border border-pink-200 bg-pink-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.15em] text-pink-600 hover:bg-pink-100"
+          >
+            {contentOpen ? 'ações ▲' : 'ações ▼'}
+          </button>
         </div>
       </div>
 
@@ -205,17 +205,17 @@ function SubTaskRow({ subTask, launchData, onToggle, onContentChange }: SubTaskR
                 🖼️ Foto da expert na composição
               </span>
             )}
-            {subTask.contentMode === 'both' && (
+            {effectiveContentMode === 'both' && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-black text-sky-700">
                 📝 Legenda + briefing de imagem
               </span>
             )}
-            {subTask.contentMode === 'text' && (
+            {effectiveContentMode === 'text' && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-black text-sky-700">
-                📝 Legenda
+                📝 Plano/Texto da tarefa
               </span>
             )}
-            {subTask.contentMode === 'image' && (
+            {effectiveContentMode === 'image' && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-black text-violet-700">
                 🎨 Briefing de imagem
               </span>

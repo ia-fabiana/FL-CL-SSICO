@@ -773,6 +773,76 @@ const QUESTION_MENU_SECTIONS: QuestionMenuSection[] = [
 ];
 
 const REQUIRED_QUESTION_SECTION_IDS = ['contexto', 'beneficios', 'como-fazer'] as const;
+
+const QUESTION_SECTION_VISUAL_STYLES: Record<
+  string,
+  {
+    containerClassName: string;
+    titleClassName: string;
+    activeButtonClassName: string;
+    inactiveButtonClassName: string;
+    activeBadgeClassName: string;
+  }
+> = {
+  contexto: {
+    containerClassName: 'border-cyan-200 bg-gradient-to-br from-cyan-50 to-white',
+    titleClassName: 'text-cyan-700',
+    activeButtonClassName: 'border-cyan-300 bg-cyan-100 text-cyan-900 shadow-[0_8px_16px_rgba(6,182,212,0.12)]',
+    inactiveButtonClassName: 'border-transparent bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50',
+    activeBadgeClassName: 'bg-cyan-200 text-cyan-800',
+  },
+  beneficios: {
+    containerClassName: 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white',
+    titleClassName: 'text-emerald-700',
+    activeButtonClassName: 'border-emerald-300 bg-emerald-100 text-emerald-900 shadow-[0_8px_16px_rgba(16,185,129,0.12)]',
+    inactiveButtonClassName: 'border-transparent bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50',
+    activeBadgeClassName: 'bg-emerald-200 text-emerald-800',
+  },
+  'como-fazer': {
+    containerClassName: 'border-indigo-200 bg-gradient-to-br from-indigo-50 to-white',
+    titleClassName: 'text-indigo-700',
+    activeButtonClassName: 'border-indigo-300 bg-indigo-100 text-indigo-900 shadow-[0_8px_16px_rgba(99,102,241,0.12)]',
+    inactiveButtonClassName: 'border-transparent bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50',
+    activeBadgeClassName: 'bg-indigo-200 text-indigo-800',
+  },
+  'estudos-de-caso': {
+    containerClassName: 'border-amber-200 bg-gradient-to-br from-amber-50 to-white',
+    titleClassName: 'text-amber-700',
+    activeButtonClassName: 'border-amber-300 bg-amber-100 text-amber-900 shadow-[0_8px_16px_rgba(245,158,11,0.12)]',
+    inactiveButtonClassName: 'border-transparent bg-white text-slate-700 hover:border-amber-200 hover:bg-amber-50',
+    activeBadgeClassName: 'bg-amber-200 text-amber-800',
+  },
+  historias: {
+    containerClassName: 'border-rose-200 bg-gradient-to-br from-rose-50 to-white',
+    titleClassName: 'text-rose-700',
+    activeButtonClassName: 'border-rose-300 bg-rose-100 text-rose-900 shadow-[0_8px_16px_rgba(244,63,94,0.12)]',
+    inactiveButtonClassName: 'border-transparent bg-white text-slate-700 hover:border-rose-200 hover:bg-rose-50',
+    activeBadgeClassName: 'bg-rose-200 text-rose-800',
+  },
+  estudos: {
+    containerClassName: 'border-violet-200 bg-gradient-to-br from-violet-50 to-white',
+    titleClassName: 'text-violet-700',
+    activeButtonClassName: 'border-violet-300 bg-violet-100 text-violet-900 shadow-[0_8px_16px_rgba(139,92,246,0.12)]',
+    inactiveButtonClassName: 'border-transparent bg-white text-slate-700 hover:border-violet-200 hover:bg-violet-50',
+    activeBadgeClassName: 'bg-violet-200 text-violet-800',
+  },
+  analogias: {
+    containerClassName: 'border-orange-200 bg-gradient-to-br from-orange-50 to-white',
+    titleClassName: 'text-orange-700',
+    activeButtonClassName: 'border-orange-300 bg-orange-100 text-orange-900 shadow-[0_8px_16px_rgba(249,115,22,0.12)]',
+    inactiveButtonClassName: 'border-transparent bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50',
+    activeBadgeClassName: 'bg-orange-200 text-orange-800',
+  },
+};
+
+const QUESTION_SECTION_DEFAULT_STYLE = {
+  containerClassName: 'border-slate-100 bg-slate-50/60',
+  titleClassName: 'text-slate-500',
+  activeButtonClassName: 'border-slate-300 bg-slate-100 text-slate-900 shadow-[0_8px_16px_rgba(15,23,42,0.08)]',
+  inactiveButtonClassName: 'border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50',
+  activeBadgeClassName: 'bg-slate-200 text-slate-700',
+};
+
 const ROOT_SCRIPT_DURATION_OPTIONS = [30, 45, 60];
 
 const normalizeThemeLine = (line: string) =>
@@ -960,6 +1030,7 @@ export default function App() {
   const [selectedEditorialLineIds, setSelectedEditorialLineIds] = useState<string[]>([]);
   const [selectedQuestionPrompts, setSelectedQuestionPrompts] = useState<ThemeQuestionSelectionMap>({});
   const [activeThemeWorkspace, setActiveThemeWorkspace] = useState<'column-1' | 'column-2' | 'column-3' | 'column-4'>('column-1');
+  const [activeThemeCategory, setActiveThemeCategory] = useState<'all' | AvatarThemeField>('all');
   const [rootScriptDurationMinutes, setRootScriptDurationMinutes] = useState<number>(DEFAULT_SCRIPT_DURATION_MINUTES);
   const [rootScriptDraft, setRootScriptDraft] = useState('');
   const [rootScriptApproved, setRootScriptApproved] = useState(false);
@@ -2483,6 +2554,20 @@ export default function App() {
     }
   };
 
+  const handleDownloadRootScriptMarkdown = () => {
+    if (!rootScriptDraft.trim()) {
+      setError('Gere o script do raiz antes de baixar em Markdown.');
+      return;
+    }
+    const blob = new Blob([rootScriptDraft], { type: 'text/markdown;charset=utf-8' });
+    const fileUrl = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = fileUrl;
+    anchor.download = `script-raiz-${rootScriptDurationMinutes}min.md`;
+    anchor.click();
+    window.URL.revokeObjectURL(fileUrl);
+  };
+
   const handleDownloadExport = () => {
     const content = (exportPreview || buildExportPreview()).trim();
     if (!content) {
@@ -2944,19 +3029,45 @@ export default function App() {
                 <div className="space-y-4">
                   <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
                     <div className="flex min-w-max gap-2">
-                      {[
-                        { id: 'column-1', label: 'Coluna 1', title: 'Temas', count: `${selectedThemes.length}/${avatarThemeItems.length}` },
-                        { id: 'column-2', label: 'Coluna 2', title: 'Linha editorial', count: `${selectedEditorialLines.length}/${EDITORIAL_LINE_OPTIONS.length}` },
-                        { id: 'column-3', label: 'Coluna 3', title: 'Perguntas', count: `${selectedQuestionPromptBlocks.length}` },
-                        { id: 'column-4', label: 'Coluna 4', title: 'Estrutura', count: `${selectedQuestionPromptBlocks.length}` },
-                      ].map(item => {
+                      {(
+                        [
+                          {
+                            id: 'column-1' as const,
+                            label: 'Coluna 1',
+                            title: 'Temas',
+                            count: `${selectedThemes.length}/${avatarThemeItems.length}`,
+                            pills: selectedThemes.map(t => ({ id: t.id, label: t.title })),
+                          },
+                          {
+                            id: 'column-2' as const,
+                            label: 'Coluna 2',
+                            title: 'Linha editorial',
+                            count: `${selectedEditorialLines.length}/${EDITORIAL_LINE_OPTIONS.length}`,
+                            pills: selectedEditorialLines.map(l => ({ id: l.id, label: l.title })),
+                          },
+                          {
+                            id: 'column-3' as const,
+                            label: 'Coluna 3',
+                            title: 'Perguntas',
+                            count: `${selectedQuestionPromptBlocks.length} tema(s)`,
+                            pills: selectedQuestionPromptBlocks.map(b => ({ id: b.theme.id, label: b.theme.title })),
+                          },
+                          {
+                            id: 'column-4' as const,
+                            label: 'Coluna 4',
+                            title: 'Estrutura',
+                            count: `${selectedQuestionPromptBlocks.length} tema(s)`,
+                            pills: selectedQuestionPromptBlocks.map(b => ({ id: b.theme.id, label: b.theme.title })),
+                          },
+                        ] as const
+                      ).map(item => {
                         const isActive = activeThemeWorkspace === item.id;
                         return (
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => setActiveThemeWorkspace(item.id as 'column-1' | 'column-2' | 'column-3' | 'column-4')}
-                            className={`flex min-w-[170px] flex-col rounded-2xl border px-4 py-3 text-left transition ${
+                            onClick={() => setActiveThemeWorkspace(item.id)}
+                            className={`flex min-w-[200px] flex-col rounded-2xl border px-4 py-3 text-left transition ${
                               isActive
                                 ? 'border-sky-300 bg-sky-50 shadow-[0_10px_20px_rgba(14,165,233,0.12)]'
                                 : 'border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white'
@@ -2965,6 +3076,22 @@ export default function App() {
                             <span className={`text-[10px] font-black uppercase tracking-[0.25em] ${isActive ? 'text-sky-600' : 'text-slate-400'}`}>{item.label}</span>
                             <span className="mt-2 text-sm font-black text-slate-900">{item.title}</span>
                             <span className="mt-1 text-xs font-semibold text-slate-500">{item.count}</span>
+                            <div className="mt-2 flex min-h-[44px] flex-wrap gap-1 overflow-hidden">
+                              {item.pills.length === 0 ? (
+                                <span className="self-center text-[10px] text-slate-300">Nenhum selecionado</span>
+                              ) : (
+                                item.pills.slice(0, 8).map(pill => (
+                                  <span
+                                    key={pill.id}
+                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight ${
+                                      isActive ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'
+                                    }`}
+                                  >
+                                    {pill.label.length > 20 ? pill.label.slice(0, 20) + '…' : pill.label}
+                                  </span>
+                                ))
+                              )}
+                            </div>
                           </button>
                         );
                       })}
@@ -2997,8 +3124,34 @@ export default function App() {
                           </span>
                         </div>
                       </div>
+
+                      <div className="mt-4 max-w-sm">
+                        <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400" htmlFor="theme-category-filter">
+                          Filtrar categoria de temas
+                        </label>
+                        <select
+                          id="theme-category-filter"
+                          title="Filtrar categoria de temas"
+                          value={activeThemeCategory}
+                          onChange={event => setActiveThemeCategory(event.target.value as 'all' | AvatarThemeField)}
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.04)] focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                        >
+                          <option value="all">Todos ({avatarThemeItems.length})</option>
+                          {AVATAR_THEME_FIELDS.map(field => {
+                            const groupCount = avatarThemeGroups.find(g => g.key === field.key)?.items.length ?? 0;
+                            const selectedCount = selectedThemes.filter(t => t.sourceKey === field.key).length;
+                            if (groupCount === 0) return null;
+                            return (
+                              <option key={field.key} value={field.key}>
+                                {field.label} ({selectedCount}/{groupCount})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
                       <div className="mt-5 space-y-4 max-h-[840px] overflow-y-auto pr-1">
-                        {avatarThemeGroups.map(group => {
+                        {avatarThemeGroups.filter(group => activeThemeCategory === 'all' || group.key === activeThemeCategory).map(group => {
                           const style = THEME_VISUAL_STYLES[group.key];
                           return (
                           <div key={group.key} className={`rounded-2xl border p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] ${style.cardClassName}`}>
@@ -3197,9 +3350,11 @@ export default function App() {
                               <h5 className="mt-2 text-sm font-black uppercase tracking-[0.2em] text-slate-900">{block.theme.title}</h5>
 
                               <div className="mt-3 space-y-3">
-                                {block.sections.map(section => (
-                                  <div key={`${block.theme.id}-${section.id}`} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{section.title}</p>
+                                {block.sections.map(section => {
+                                  const sectionStyle = QUESTION_SECTION_VISUAL_STYLES[section.id] ?? QUESTION_SECTION_DEFAULT_STYLE;
+                                  return (
+                                  <div key={`${block.theme.id}-${section.id}`} className={`rounded-2xl border p-3 ${sectionStyle.containerClassName}`}>
+                                    <p className={`text-xs font-semibold uppercase tracking-[0.25em] ${sectionStyle.titleClassName}`}>{section.title}</p>
                                     <div className="mt-3 grid gap-2">
                                       {section.prompts.map(prompt => (
                                         <button
@@ -3208,8 +3363,8 @@ export default function App() {
                                           onClick={() => toggleQuestionPromptSelection(block.theme.id, section.id, prompt)}
                                           className={`w-full rounded-xl border px-3 py-2 text-left transition ${
                                             section.selectedPrompts.includes(prompt)
-                                              ? 'border-indigo-300 bg-indigo-50 text-indigo-900 shadow-[0_8px_16px_rgba(99,102,241,0.12)]'
-                                              : 'border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50'
+                                              ? sectionStyle.activeButtonClassName
+                                              : sectionStyle.inactiveButtonClassName
                                           }`}
                                         >
                                           <div className="flex items-start justify-between gap-3">
@@ -3217,7 +3372,7 @@ export default function App() {
                                             <span
                                               className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
                                                 section.selectedPrompts.includes(prompt)
-                                                  ? 'bg-indigo-200 text-indigo-800'
+                                                  ? sectionStyle.activeBadgeClassName
                                                   : 'bg-slate-100 text-slate-400'
                                               }`}
                                             >
@@ -3228,7 +3383,7 @@ export default function App() {
                                       ))}
                                     </div>
                                   </div>
-                                ))}
+                                )})}
                               </div>
                             </div>
                           ))
@@ -3386,6 +3541,9 @@ export default function App() {
                   </button>
                   <button type="button" onClick={handleDownloadRootScriptPdf} disabled={!rootScriptDraft.trim()} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-teal-300 bg-teal-50 px-5 py-2.5 text-sm font-bold text-teal-800 hover:border-teal-400 hover:bg-teal-100 disabled:opacity-60">
                     Baixar PDF
+                  </button>
+                  <button type="button" onClick={handleDownloadRootScriptMarkdown} disabled={!rootScriptDraft.trim()} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-300 bg-violet-50 px-5 py-2.5 text-sm font-bold text-violet-800 hover:border-violet-400 hover:bg-violet-100 disabled:opacity-60">
+                    Baixar Markdown
                   </button>
                 </div>
 

@@ -167,6 +167,21 @@ function TaskCard({ task, onToggleTask, onToggleSubTask }: TaskCardProps) {
           {task.notes && (
             <p className="mt-1 text-xs text-slate-500 leading-relaxed">{task.notes}</p>
           )}
+
+          {task.done && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={event => {
+                  event.stopPropagation();
+                  onToggleTask();
+                }}
+                className="rounded-full border border-rose-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-rose-600 hover:border-rose-300 hover:bg-rose-50"
+              >
+                Desmarcar
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

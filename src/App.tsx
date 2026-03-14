@@ -2099,7 +2099,8 @@ export default function App() {
       }
     } catch (err) {
       console.error('Erro ao processar instruções personalizadas', err);
-      setError('Não foi possível processar este bloco. Tente novamente.');
+      const message = err instanceof Error && err.message ? err.message : 'Não foi possível processar este bloco. Tente novamente.';
+      setError(message);
     } finally {
       setGuidanceProcessing(prev => ({ ...prev, [key]: false }));
     }

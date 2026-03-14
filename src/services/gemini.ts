@@ -234,7 +234,12 @@ export async function generatePhaseDetails(
     contents: prompt,
   });
 
-  return response.text?.trim() ?? '';
+  const output = response.text?.trim() ?? '';
+  if (!output) {
+    throw new Error('A IA nao retornou texto para este processamento.');
+  }
+
+  return output;
 }
 
 interface RootScriptQuestionSectionInput {

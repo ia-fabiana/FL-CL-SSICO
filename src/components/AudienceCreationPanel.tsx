@@ -70,10 +70,11 @@ function SubTaskRow({ subTask, onToggle }: SubTaskRowProps) {
 interface TaskCardProps {
   task: AudienceTask;
   onToggleTask: () => void;
+  onReopenTask: () => void;
   onToggleSubTask: (subTaskId: string) => void;
 }
 
-function TaskCard({ task, onToggleTask, onToggleSubTask }: TaskCardProps) {
+function TaskCard({ task, onToggleTask, onReopenTask, onToggleSubTask }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
   const pc = PLATFORM_CONFIG[task.platform];
   const hasSubs = (task.subTasks?.length ?? 0) > 0;
@@ -174,7 +175,7 @@ function TaskCard({ task, onToggleTask, onToggleSubTask }: TaskCardProps) {
                 type="button"
                 onClick={event => {
                   event.stopPropagation();
-                  onToggleTask();
+                  onReopenTask();
                 }}
                 className="rounded-full border border-rose-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-rose-600 hover:border-rose-300 hover:bg-rose-50"
               >
@@ -225,10 +226,11 @@ function TaskCard({ task, onToggleTask, onToggleSubTask }: TaskCardProps) {
 interface DayGroupProps {
   day: AudienceDay;
   onToggleTask: (taskId: string) => void;
+  onReopenTask: (taskId: string) => void;
   onToggleSubTask: (taskId: string, subTaskId: string) => void;
 }
 
-function DayGroup({ day, onToggleTask, onToggleSubTask }: DayGroupProps) {
+function DayGroup({ day, onToggleTask, onReopenTask, onToggleSubTask }: DayGroupProps) {
   const doneTasks = day.tasks.filter(t => t.done).length;
   const totalTasks = day.tasks.length;
   const allDone = doneTasks === totalTasks && totalTasks > 0;
@@ -272,6 +274,7 @@ function DayGroup({ day, onToggleTask, onToggleSubTask }: DayGroupProps) {
             key={task.id}
             task={task}
             onToggleTask={() => onToggleTask(task.id)}
+            onReopenTask={() => onReopenTask(task.id)}
             onToggleSubTask={subId => onToggleSubTask(task.id, subId)}
           />
         ))}
@@ -305,6 +308,25 @@ export default function AudienceCreationPanel({ days, onChange }: AudienceCreati
               ...task,
               done: nowDone,
               doneAt: nowDone ? new Date().toISOString() : undefined,
+            };
+          }),
+        };
+      })
+    );
+  };
+
+  const handleReopenTask = (dayId: string, taskId: string) => {
+    onChange(
+      days.map(day => {
+        if (day.id !== dayId) return day;
+        return {
+          ...day,
+          tasks: day.tasks.map(task => {
+            if (task.id !== taskId) return task;
+            return {
+              ...task,
+              done: false,
+              doneAt: undefined,
             };
           }),
         };
@@ -366,6 +388,7 @@ export default function AudienceCreationPanel({ days, onChange }: AudienceCreati
           key={day.id}
           day={day}
           onToggleTask={taskId => handleToggleTask(day.id, taskId)}
+          onReopenTask={taskId => handleReopenTask(day.id, taskId)}
           onToggleSubTask={(taskId, subId) => handleToggleSubTask(day.id, taskId, subId)}
         />
       ))}

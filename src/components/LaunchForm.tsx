@@ -712,21 +712,21 @@ export default function LaunchForm({
               <Sparkles size={20} className="text-slate-600" /> Gatilhos Mentais
             </h3>
             <div className="flex items-center gap-3">
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Base para todo o lancamento</p>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Base para todo o lançamento</p>
               <button type="button" onClick={() => onDownloadSection?.('section-general-triggers')} className="rounded-full border border-slate-300 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 hover:border-indigo-300 hover:text-indigo-700">Download categoria</button>
             </div>
           </div>
 
           <div className="space-y-4">
             <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <Sparkles size={16} className="text-slate-500" /> Gatilhos e explicacoes
+              <Sparkles size={16} className="text-slate-500" /> Gatilhos e explicações
             </label>
             <textarea
               name="generalTriggers"
               value={formData.generalTriggers}
               onChange={handleChange}
               rows={8}
-              placeholder="Liste os gatilhos e as explicacoes que devem aparecer em todas as fases..."
+              placeholder="Liste os gatilhos e as explicações que devem aparecer em todas as fases..."
               className={textareaTallClass}
               data-gramm="false"
               data-gramm_editor="false"

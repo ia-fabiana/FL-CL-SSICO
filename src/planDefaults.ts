@@ -50,31 +50,31 @@ export const DEFAULT_SEED_PLAN: LaunchPlan = {
   snaStrategy:
     'Mapeie grupos principais (WhatsApp, Telegram, Comunidade) e nomeie responsáveis. A versão completa será preenchida automaticamente após gerar o plano.',
   insiderDeliverablesMap:
-    'Organize tarefas por macro-fase do semente: CLI, aquecimento, webinario, vendas, entrega e debriefing. Ao gerar o plano, você receberá a lista detalhada pronta para delegar.',
+    'Organize tarefas por macro-fase do semente: CLI, aquecimento, webinário, vendas, entrega e debriefing. Ao gerar o plano, você receberá a lista detalhada pronta para delegar.',
   structure: [
     phase(
       'seed',
       'CLI',
       'CLI - Construcao da Lista de Inscritos',
-      'Construa a lista de inscritos com pagina, campanhas e comunicacao preparadas para o webinario.'
+      'Construa a lista de inscritos com página, campanhas e comunicação preparadas para o webinário.'
     ),
     phase(
       'seed',
       'AL',
       'AL - Aquecimento de Inscritos',
-      'Engaje e nutra os inscritos com conteudos e lembretes para garantir presenca ao vivo.'
+      'Engaje e nutra os inscritos com conteúdos e lembretes para garantir presença ao vivo.'
     ),
     phase(
       'seed',
       'SEED_WEBINAR',
       'SEMENTE • Webinario (Aula Ao Vivo)',
-      'Execute o roteiro de vendas com conteudo de alto valor e oferta ao final da aula.'
+      'Execute o roteiro de vendas com conteúdo de alto valor e oferta ao final da aula.'
     ),
     phase(
       'seed',
       'SEED_CART',
       'SEMENTE • Carrinho Aberto',
-      'Mantenha as vendas abertas apos o webinario, removendo objecoes e reforcando a oferta.'
+      'Mantenha as vendas abertas após o webinário, removendo objeções e reforçando a oferta.'
     ),
     phase(
       'seed',
@@ -86,7 +86,7 @@ export const DEFAULT_SEED_PLAN: LaunchPlan = {
       'seed',
       'SEED_DEBRIEF',
       'SEMENTE • Debriefing',
-      'Analise o ciclo, documente aprendizados e ajuste o proximo lancamento.'
+      'Analise o ciclo, documente aprendizados e ajuste o próximo lançamento.'
     ),
   ],
 };

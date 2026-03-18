@@ -6,10 +6,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from 'jspdf';
-import { AudienceDay, ChecklistData, GuidanceEntry, GuidanceMap, LaunchData, LaunchPlan, LaunchPhase, LaunchType, PhaseContentMap, PhaseTask, RootScriptVersion, RootScriptVersionStatus, StoredBriefing, TaskProof } from './types';
+import { AudienceDay, ChecklistData, GuidanceEntry, GuidanceMap, LaunchData, LaunchPlan, LaunchPhase, LaunchType, LeadCapturePrepDay, PhaseContentMap, PhaseTask, RootScriptVersion, RootScriptVersionStatus, StoredBriefing, TaskProof } from './types';
 import { generateGuidedFieldCopy, generatePhaseDetails, generateRootHeadlines, generateRootScript, generateTaskContentDraft } from './services/gemini';
 import LaunchForm from './components/LaunchForm';
 import AudienceCreationPanel from './components/AudienceCreationPanel';
+import LeadCapturePreparationPanel from './components/LeadCapturePreparationPanel';
 import { Sparkles, BookOpen, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PublikaShowcase } from './components/PublikaShowcase';
@@ -43,6 +44,7 @@ import {
 } from './guidance';
 import { getDefaultPlan } from './planDefaults';
 import { DEFAULT_SCRIPT_DURATION_MINUTES } from './constants';
+import { DEFAULT_LEAD_CAPTURE_PREP_DAYS, LEAD_CAPTURE_PREP_WEEK } from './leadCapturePreparationDefaults';
 
 const EMPTY_LAUNCH_DATA: LaunchData = {
   generalTriggers: '',
@@ -575,11 +577,11 @@ const AVATAR_THEME_FIELDS: Array<{
   {
     key: 'avatarFear',
     label: 'Medo',
-    angle: 'Mostre o risco de nao agir e a tensao emocional envolvida.',
+    angle: 'Mostre o risco de não agir e a tensão emocional envolvida.',
   },
   {
     key: 'avatarLimitingBeliefs',
-    label: 'Crencas limitantes',
+    label: 'Crenças limitantes',
     angle: 'Traga as verdades distorcidas que fazem o avatar se sabotar ou desacreditar.',
   },
   {
@@ -611,10 +613,10 @@ const EDITORIAL_LINE_OPTIONS: EditorialLineOption[] = [
   {
     id: 'perguntas-respostas',
     title: 'Perguntas e Respostas',
-    description: 'Formato de FAQ com perguntas reais ou pre-selecionadas pela audiencia.',
+    description: 'Formato de FAQ com perguntas reais ou pré-selecionadas pela audiência.',
     benefits: 'Confirma que o tema conversa com a realidade do avatar e aumenta proximidade.',
-    howTo: 'Use caixa de perguntas, comentarios, direct ou perguntas recorrentes da audiencia.',
-    bestUse: 'Ideal para objecoes, mitos, medos e perguntas muito repetidas.',
+    howTo: 'Use caixa de perguntas, comentários, direct ou perguntas recorrentes da audiência.',
+    bestUse: 'Ideal para objeções, mitos, medos e perguntas muito repetidas.',
   },
   {
     id: 'entrevistas',
@@ -622,7 +624,7 @@ const EDITORIAL_LINE_OPTIONS: EditorialLineOption[] = [
     description: 'Conversa com aluno, cliente, expert ou convidado para explorar o tema.',
     benefits: 'Reforca autoridade, prova e percepcao de resultado real.',
     howTo: 'Agende a entrevista com um caso concreto e use perguntas que puxem detalhes praticos.',
-    bestUse: 'Perfeito para temas que precisam de prova, caso real e validacao social.',
+    bestUse: 'Perfeito para temas que precisam de prova, caso real e validação social.',
   },
   {
     id: 'consultoria-online',
@@ -642,8 +644,8 @@ const EDITORIAL_LINE_OPTIONS: EditorialLineOption[] = [
   },
   {
     id: 'live-pre-lancamento',
-    title: 'Live Pre-lancamento',
-    description: 'Live de aquecimento para gerar interesse e preparar a audiencia para o tema.',
+    title: 'Live Pré-lançamento',
+    description: 'Live de aquecimento para gerar interesse e preparar a audiência para o tema.',
     benefits: 'Aumenta antecipacao e cria ponte com o evento principal.',
     howTo: 'Abra com um gancho forte, entregue clareza e termine com proximo passo definido.',
     bestUse: 'Boa para dores, medos e desejos que precisam ganhar urgencia.',
@@ -652,33 +654,33 @@ const EDITORIAL_LINE_OPTIONS: EditorialLineOption[] = [
     id: 'webinario-semente',
     title: 'Webinario Semente',
     description: 'Aula central do semente para apresentar oportunidade, metodo e oferta.',
-    benefits: 'Organiza a narrativa e conecta contexto, desejo e decisao.',
+    benefits: 'Organiza a narrativa e conecta contexto, desejo e decisão.',
     howTo: 'Use uma linha de raciocinio progressiva que leve da consciencia para a acao.',
-    bestUse: 'Ideal para desejos, oportunidades, mito sobre ROMA e visao de futuro.',
+    bestUse: 'Ideal para desejos, oportunidades, mito sobre ROMA e visão de futuro.',
   },
   {
     id: 'webinario-cpl1',
     title: 'Webinario CPL 1',
-    description: 'Primeiro conteudo classico para abrir a conversa e preparar o terreno.',
+    description: 'Primeiro conteúdo clássico para abrir a conversa e preparar o terreno.',
     benefits: 'Cria consciencia, interesse e enquadramento do tema.',
     howTo: 'Foque no contexto, no erro comum e na nova forma de ver o problema.',
-    bestUse: 'Combina com dores, objecoes e mitos centrais do avatar.',
+    bestUse: 'Combina com dores, objeções e mitos centrais do avatar.',
   },
   {
     id: 'webinario-cpl2',
     title: 'Webinario CPL 2',
-    description: 'Segundo conteudo classico para aprofundar a oportunidade e aumentar desejo.',
-    benefits: 'Expande a visao de beneficio e prepara o avatar para a mudanca.',
+    description: 'Segundo conteúdo clássico para aprofundar a oportunidade e aumentar desejo.',
+    benefits: 'Expande a visão de benefício e prepara o avatar para a mudança.',
     howTo: 'Trabalhe contraste entre situacao atual e possibilidade real de transformacao.',
-    bestUse: 'Muito forte para desejos, oportunidades, atalhos e beneficios praticos.',
+    bestUse: 'Muito forte para desejos, oportunidades, atalhos e benefícios práticos.',
   },
   {
     id: 'webinario-cpl3',
     title: 'Webinario CPL 3',
-    description: 'Terceiro conteudo classico para consolidar solucao, prova e acao.',
+    description: 'Terceiro conteúdo clássico para consolidar solução, prova e ação.',
     benefits: 'Une autoridade, prova e prontidao para a oferta.',
-    howTo: 'Amarre prova, metodo, objecoes finais e passo imediato.',
-    bestUse: 'Funciona muito bem para objecoes, medo, atalhos e decisao final.',
+    howTo: 'Amarre prova, método, objeções finais e passo imediato.',
+    bestUse: 'Funciona muito bem para objeções, medo, atalhos e decisão final.',
   },
 ];
 
@@ -691,7 +693,7 @@ const SCRIPT_STRUCTURE_STEPS = [
   {
     id: 'contexto',
     title: '2. Contexto',
-    items: ['Explique o que e esse tema.', 'Explique o que nao e esse tema.'],
+    items: ['Explique o que é esse tema.', 'Explique o que não é esse tema.'],
   },
   {
     id: 'beneficios',
@@ -699,7 +701,7 @@ const SCRIPT_STRUCTURE_STEPS = [
     items: [
       'Explique por que esse tema e uma oportunidade.',
       'De 1 a 3 exemplos de pessoas semelhantes ao avatar que tiveram resultado com esse tema.',
-      'Responda de 1 a 3 objecoes que aparecem quando esse tema entra em cena.',
+      'Responda de 1 a 3 objeções que aparecem quando esse tema entra em cena.',
     ],
   },
   {
@@ -718,9 +720,9 @@ const QUESTION_MENU_SECTIONS: QuestionMenuSection[] = [
     id: 'contexto',
     title: 'O que e / Contexto',
     prompts: [
-      'O que e {tema}?',
+      'O que é {tema}?',
       'As pessoas confundem o que significa isso?',
-      'Qual a diferenca entre {tema} e a alternativa mais comum?',
+      'Qual a diferença entre {tema} e a alternativa mais comum?',
       'Quais tipos de {tema} existem?',
     ],
   },
@@ -728,13 +730,13 @@ const QUESTION_MENU_SECTIONS: QuestionMenuSection[] = [
     id: 'beneficios',
     title: 'Beneficios',
     prompts: [
-      'Por que {tema} e importante?',
+      'Por que {tema} é importante?',
       'Por que investir tempo ou dinheiro nisso?',
-      'Qual o maior beneficio de {tema}?',
+      'Qual o maior benefício de {tema}?',
       'Por que {tema} consegue gerar resultado?',
       'Quais as vantagens de usar {tema}?',
-      'Se eu nao fizer {tema}, o que acontece?',
-      'Qual e o melhor momento para aplicar {tema}?',
+      'Se eu não fizer {tema}, o que acontece?',
+      'Qual é o melhor momento para aplicar {tema}?',
       'O que vale mais: fazer {tema} ou seguir a alternativa comum?',
     ],
   },
@@ -744,9 +746,9 @@ const QUESTION_MENU_SECTIONS: QuestionMenuSection[] = [
     prompts: [
       'Onde as pessoas mais erram nisso?',
       'Por onde comecar?',
-      'Como voce organiza {tema}?',
+      'Como você organiza {tema}?',
       'Quando e melhor fazer {tema}?',
-      'Voce tem um exemplo pratico de como fazer isso?',
+      'Você tem um exemplo prático de como fazer isso?',
       'Como melhorar {tema}?',
       'Como fazer {tema} mesmo sem ter tudo pronto?',
       'Como usar {tema} em um caso especifico do avatar?',
@@ -765,24 +767,24 @@ const QUESTION_MENU_SECTIONS: QuestionMenuSection[] = [
   },
   {
     id: 'historias',
-    title: 'Historias',
+    title: 'Histórias',
     prompts: [
-      'Como voce chegou nessa conclusao?',
-      'Como foi que voce descobriu isso?',
+      'Como você chegou nessa conclusão?',
+      'Como foi que você descobriu isso?',
       'Quando foi a primeira vez que isso aconteceu?',
-      'Voce se lembra de alguma historia em que isso foi importante para voce?',
-      'Quanto tempo voce demorou para fazer isso?',
+      'Você se lembra de alguma história em que isso foi importante para você?',
+      'Quanto tempo você demorou para fazer isso?',
     ],
   },
   {
     id: 'estudos',
     title: 'Estudos',
     prompts: [
-      'Quais dados demograficos ajudam a sustentar esse tema?',
-      'Existem estudos cientificos que ajudam a explicar isso?',
-      'Quais estatisticas fortalecem esse ponto?',
-      'Existe alguma historia com numeros que deixe isso mais concreto?',
-      'Quais referencias confiaveis voce usaria para validar esse tema?',
+      'Quais dados demográficos ajudam a sustentar esse tema?',
+      'Existem estudos científicos que ajudam a explicar isso?',
+      'Quais estatísticas fortalecem esse ponto?',
+      'Existe alguma história com números que deixe isso mais concreto?',
+      'Quais referências confiáveis você usaria para validar esse tema?',
     ],
   },
   {
@@ -875,14 +877,14 @@ const ROOT_SCRIPT_SCRUMBAN_COLUMNS: Array<{
   className: string;
 }> = [
   { key: 'idea', label: 'Ideia / Rascunho', className: 'border-slate-200 bg-slate-50/70' },
-  { key: 'review', label: 'Em revisao', className: 'border-amber-200 bg-amber-50/70' },
+  { key: 'review', label: 'Em revisão', className: 'border-amber-200 bg-amber-50/70' },
   { key: 'approved', label: 'Aprovado', className: 'border-emerald-200 bg-emerald-50/70' },
   { key: 'published', label: 'Publicado', className: 'border-sky-200 bg-sky-50/70' },
 ];
 
 const ROOT_SCRIPT_STATUS_LABELS: Record<RootScriptVersionStatus, string> = {
   idea: 'Ideia / Rascunho',
-  review: 'Em revisao',
+  review: 'Em revisão',
   approved: 'Aprovado',
   published: 'Publicado',
 };
@@ -1083,6 +1085,7 @@ export default function App() {
   const [rootHeadlines, setRootHeadlines] = useState<string[]>([]);
   const [rootHeadlinesFeedback, setRootHeadlinesFeedback] = useState<string | null>(null);
   const [audienceDays, setAudienceDays] = useState<AudienceDay[]>(DEFAULT_AUDIENCE_DAYS);
+  const [leadCapturePrepDays, setLeadCapturePrepDays] = useState<LeadCapturePrepDay[]>(DEFAULT_LEAD_CAPTURE_PREP_DAYS);
   const [isGeneratingRootHeadlines, setIsGeneratingRootHeadlines] = useState(false);
   const [isGeneratingRootScript, setIsGeneratingRootScript] = useState(false);
   const [isSpeakingRootScript, setIsSpeakingRootScript] = useState(false);
@@ -1402,7 +1405,7 @@ export default function App() {
         },
         {
           title: 'Gatilhos gerais',
-          fields: [{ label: 'Gatilhos e explicacoes', value: data.generalTriggers }],
+          fields: [{ label: 'Gatilhos e explicações', value: data.generalTriggers }],
         },
         {
           title: 'Expert e Avatar',
@@ -1422,7 +1425,7 @@ export default function App() {
             { label: 'Objeções', value: data.avatarObjections },
             { label: 'Mito Sobre ROMA', value: data.avatarRomaMyth },
             { label: 'Medo', value: data.avatarFear },
-            { label: 'CrenÃ§as limitantes', value: data.avatarLimitingBeliefs },
+            { label: 'Crenças limitantes', value: data.avatarLimitingBeliefs },
             { label: '"Abre Aspas"', value: data.avatarQuote },
             { label: 'Oportunidades e Atalhos', value: data.avatarOpportunitiesShortcuts },
             { label: 'Pesquisa ABC', value: data.avatarResearchABC },
@@ -1491,7 +1494,7 @@ export default function App() {
     }
 
     if (lines.length > 0) {
-      lines[0] = 'LANCAMENTOS · VISÃO COMPLETA';
+      lines[0] = 'LANÇAMENTOS · VISÃO COMPLETA';
     }
 
     return lines.join('\n');
@@ -1509,7 +1512,8 @@ export default function App() {
       { id: 'section-general-triggers', label: 'Gatilhos Mentais' },
       { id: 'section-timeline-overview', label: 'Linha do tempo' },
       { id: 'section-theme-list', label: 'Lista de temas' },
-      { id: 'section-audience-creation', label: 'Criação de Audiência' },
+      { id: 'section-audience-creation', label: '1. Criação de Audiência' },
+      { id: 'section-lead-capture-prep', label: '2. Preparação captação de leads' },
     ];
 
     const phaseItems: NavItem[] = displayStructure.map(phase => ({
@@ -1672,6 +1676,7 @@ export default function App() {
           rootScriptDurationMinutes: storedRootScriptDurationMinutes,
           rootScriptActiveVersionId: storedRootScriptActiveVersionId,
           audienceDays: storedAudienceDays,
+          leadCapturePrepDays: storedLeadCapturePrepDays,
           createdAt,
           updatedAt,
           ...launchFields
@@ -1696,6 +1701,9 @@ export default function App() {
         setCurrentRootScriptVersionId(storedRootScriptActiveVersionId ?? null);
         if (Array.isArray(storedAudienceDays) && storedAudienceDays.length > 0) {
           setAudienceDays(storedAudienceDays);
+        }
+        if (Array.isArray(storedLeadCapturePrepDays) && storedLeadCapturePrepDays.length > 0) {
+          setLeadCapturePrepDays(storedLeadCapturePrepDays);
         }
         if (typeof storedRootScriptDurationMinutes === 'number' && ROOT_SCRIPT_DURATION_OPTIONS.includes(storedRootScriptDurationMinutes)) {
           setRootScriptDurationMinutes(storedRootScriptDurationMinutes);
@@ -1973,6 +1981,14 @@ export default function App() {
     });
   };
 
+  const persistLeadCapturePrepDays = async (days: LeadCapturePrepDay[]) => {
+    const ensuredId = await ensureBriefingDocument();
+    await updateDoc(doc(db, 'launchBriefings', ensuredId), {
+      leadCapturePrepDays: days,
+      updatedAt: serverTimestamp(),
+    });
+  };
+
   const persistBriefing = async (data: LaunchData, guidanceOverride?: GuidanceMap) => {
     const normalizedData = normalizeAvatarKnowledgeBaseForStorage(data);
     const normalizedChecklist = mergeChecklist(checklist);
@@ -1989,6 +2005,8 @@ export default function App() {
       rootScriptHeadlines: rootHeadlines,
       rootScriptDurationMinutes,
       rootScriptActiveVersionId: currentRootScriptVersionId,
+      audienceDays,
+      leadCapturePrepDays,
       updatedAt: serverTimestamp(),
     };
 
@@ -2027,7 +2045,7 @@ export default function App() {
       console.error(err);
       const message = getFirebaseErrorMessage(
         err,
-        'Ocorreu um erro ao salvar seu diagnostico. Por favor, tente novamente.'
+        'Ocorreu um erro ao salvar seu diagnóstico. Por favor, tente novamente.'
       );
       setError(message);
       throw new Error(message);
@@ -2215,7 +2233,7 @@ export default function App() {
       await persistPhaseContent(nextStructure);
     } catch (err) {
       console.error('Erro ao atualizar etapa da fase', err);
-      setError('Nao foi possivel salvar o status da etapa. Tente novamente.');
+      setError('Não foi possível salvar o status da etapa. Tente novamente.');
     }
   };
 
@@ -2232,7 +2250,7 @@ export default function App() {
 
   const handleGenerateTaskDraft = async (phaseId: string, taskId: string) => {
     if (!launchData) {
-      setError('Preencha e salve o diagnostico antes de gerar conteudo da etapa.');
+      setError('Preencha e salve o diagnóstico antes de gerar conteúdo da etapa.');
       return;
     }
 
@@ -2243,7 +2261,7 @@ export default function App() {
     }
 
     if (!taskDefinition.contentMode || taskDefinition.contentMode === 'none') {
-      setError('Esta etapa nao exige geracao de texto ou imagem.');
+      setError('Esta etapa não exige geração de texto ou imagem.');
       return;
     }
 
@@ -2258,8 +2276,8 @@ export default function App() {
         structure: replaceTaskInStructure(prev.structure, phaseId, taskId, { contentDraft: draft }),
       }));
     } catch (err) {
-      console.error('Erro ao gerar conteudo da etapa', err);
-      setError('Nao foi possivel gerar o conteudo da etapa. Tente novamente.');
+      console.error('Erro ao gerar conteúdo da etapa', err);
+      setError('Não foi possível gerar o conteúdo da etapa. Tente novamente.');
     } finally {
       setGeneratingTaskKey(current => (current === actionKey ? null : current));
     }
@@ -2280,8 +2298,8 @@ export default function App() {
       });
       await persistPhaseContent(nextStructure);
     } catch (err) {
-      console.error('Erro ao salvar conteudo da etapa', err);
-      setError('Nao foi possivel salvar o conteudo da etapa. Tente novamente.');
+      console.error('Erro ao salvar conteúdo da etapa', err);
+      setError('Não foi possível salvar o conteúdo da etapa. Tente novamente.');
     } finally {
       setSavingTaskKey(current => (current === actionKey ? null : current));
     }
@@ -2298,7 +2316,7 @@ export default function App() {
       await persistPhaseContent(normalizedStructure);
     } catch (err) {
       console.error('Erro ao salvar etapa', err);
-      setError('Nao foi possivel salvar as alteracoes da etapa. Tente novamente.');
+      setError('Não foi possível salvar as alterações da etapa. Tente novamente.');
     } finally {
       setSavingTaskKey(current => (current === actionKey ? null : current));
     }
@@ -2342,7 +2360,7 @@ export default function App() {
       await persistPhaseContent(nextStructure);
     } catch (err) {
       console.error('Erro ao anexar prova da etapa', err);
-      setError('Nao foi possivel anexar a prova da etapa. Verifique permissao do Storage.');
+      setError('Não foi possível anexar a prova da etapa. Verifique a permissão do Storage.');
     } finally {
       setUploadingTaskKey(current => (current === actionKey ? null : current));
     }
@@ -2357,7 +2375,7 @@ export default function App() {
       await persistPhaseContent(normalizedStructure);
     } catch (err) {
       console.error('Erro ao salvar roteiro da fase', err);
-      setError('Nao foi possivel salvar o roteiro da fase. Tente novamente.');
+      setError('Não foi possível salvar o roteiro da fase. Tente novamente.');
     } finally {
       setSavingPhaseId(current => (current === phaseId ? null : current));
     }
@@ -2366,12 +2384,12 @@ export default function App() {
   const handleGenerateRootScript = async () => {
     const baseData = launchData ?? formDefaults;
     if (!baseData) {
-      setError('Preencha e salve o diagnostico antes de gerar o script do raiz.');
+      setError('Preencha e salve o diagnóstico antes de gerar o script do raiz.');
       return;
     }
 
     if (!baseData.mainBenefit?.trim()) {
-      setError('Preencha a ROMA em Informacoes da ROMA antes de gerar o script do raiz.');
+      setError('Preencha a ROMA em Informações da ROMA antes de gerar o script do raiz.');
       return;
     }
 
@@ -2400,7 +2418,7 @@ export default function App() {
         durationMinutes: rootScriptDurationMinutes,
         requestToken: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         regenerationHint: hadPreviousDraft
-          ? 'Gerar uma NOVA versao do roteiro do raiz com abordagem diferente da versao anterior, mantendo ROMA e selecoes atuais.'
+          ? 'Gerar uma NOVA vers?o do roteiro do raiz com abordagem diferente da vers?o anterior, mantendo ROMA e sele??es atuais.'
           : undefined,
         editorialLines: selectedEditorialTitles,
         themes: selectedQuestionPromptBlocks.map(block => ({
@@ -2435,13 +2453,13 @@ export default function App() {
       setCurrentRootScriptVersionId(nextVersionId);
       setRootHeadlinesFeedback(
         hadPreviousDraft
-          ? 'Nova versao do roteiro gerada. Aprove e salve para liberar a geracao de headlines.'
-          : 'Roteiro gerado. Aprove e salve para liberar a geracao de headlines.'
+          ? 'Nova vers?o do roteiro gerada. Aprove e salve para liberar a gera??o de headlines.'
+          : 'Roteiro gerado. Aprove e salve para liberar a gera??o de headlines.'
       );
       await persistRootScriptState(script, false, [], nextVersionId);
     } catch (err) {
       console.error('Erro ao gerar script do raiz', err);
-      setError('Nao foi possivel gerar o script do raiz. Tente novamente.');
+      setError('Não foi possível gerar o script do raiz. Tente novamente.');
     } finally {
       setIsGeneratingRootScript(false);
     }
@@ -2486,7 +2504,7 @@ export default function App() {
       setRootHeadlinesFeedback('Script aprovado e salvo. Agora clique em Gerar 5 headlines.');
     } catch (err) {
       console.error('Erro ao aprovar script do raiz', err);
-      setError('Nao foi possivel aprovar e salvar o script do raiz. Tente novamente.');
+      setError('Não foi possível aprovar e salvar o script do raiz. Tente novamente.');
     } finally {
       setIsSavingRootScript(false);
     }
@@ -2495,20 +2513,20 @@ export default function App() {
   const handleGenerateRootHeadlines = async () => {
     const baseData = launchData ?? formDefaults;
     if (!baseData) {
-      setError('Preencha e salve o diagnostico antes de gerar headlines.');
-      setRootHeadlinesFeedback('Nao foi possivel gerar headlines: diagnostico nao salvo.');
+      setError('Preencha e salve o diagnóstico antes de gerar headlines.');
+      setRootHeadlinesFeedback('Não foi possível gerar headlines: diagnóstico não salvo.');
       return;
     }
 
     if (!rootScriptApproved) {
       setError('Aprove e salve o script do raiz antes de gerar headlines.');
-      setRootHeadlinesFeedback('Aprovacao pendente: clique em Aprovar e salvar antes das headlines.');
+      setRootHeadlinesFeedback('Aprova??o pendente: clique em Aprovar e salvar antes das headlines.');
       return;
     }
 
     if (!rootScriptDraft.trim()) {
-      setError('Nao existe script aprovado para gerar headlines.');
-      setRootHeadlinesFeedback('Nenhum roteiro disponivel para gerar headlines.');
+      setError('Não existe script aprovado para gerar headlines.');
+      setRootHeadlinesFeedback('Nenhum roteiro dispon?vel para gerar headlines.');
       return;
     }
 
@@ -2534,12 +2552,12 @@ export default function App() {
       if (nextHeadlines.length > 0) {
         setRootHeadlinesFeedback(`${nextHeadlines.length} headlines geradas com sucesso.`);
       } else {
-        setRootHeadlinesFeedback('A geracao terminou sem headlines. Tente novamente.');
+        setRootHeadlinesFeedback('A gera??o terminou sem headlines. Tente novamente.');
       }
     } catch (err) {
       console.error('Erro ao gerar headlines do script do raiz', err);
-      setError('Nao foi possivel gerar as headlines. Tente novamente.');
-      setRootHeadlinesFeedback('Falha ao gerar headlines. Verifique a conexao e tente novamente.');
+      setError('Não foi possível gerar as headlines. Tente novamente.');
+      setRootHeadlinesFeedback('Falha ao gerar headlines. Verifique a conex?o e tente novamente.');
     } finally {
       setIsGeneratingRootHeadlines(false);
     }
@@ -2547,7 +2565,7 @@ export default function App() {
 
   const handleTogglePhaseAudio = (phase: LaunchPhase) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setError('Seu navegador nao suporta reproducao de audio por voz sintetizada.');
+      setError('Seu navegador não suporta reprodução de áudio por voz sintetizada.');
       return;
     }
 
@@ -2560,14 +2578,14 @@ export default function App() {
     }
 
     if (!phase.liveScript) {
-      setError('Gere o roteiro da fase antes de ouvir o audio.');
+      setError('Gere o roteiro da fase antes de ouvir o áudio.');
       return;
     }
 
     const spokenText = extractNarrationText(phase.liveScript);
 
     if (!spokenText) {
-      setError('Nao foi possivel extrair texto para audio nesta fase.');
+      setError('Não foi possível extrair texto para áudio nesta fase.');
       return;
     }
 
@@ -2596,7 +2614,7 @@ export default function App() {
 
   const handleToggleRootScriptAudio = () => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setError('Seu navegador nao suporta reproducao de audio por voz sintetizada.');
+      setError('Seu navegador não suporta reprodução de áudio por voz sintetizada.');
       return;
     }
 
@@ -2616,7 +2634,7 @@ export default function App() {
     const spokenText = extractNarrationText(rootScriptDraft);
 
     if (!spokenText) {
-      setError('Nao foi possivel extrair texto para audio no script do raiz.');
+      setError('Não foi possível extrair texto para áudio no script do raiz.');
       return;
     }
 
@@ -2739,8 +2757,8 @@ export default function App() {
       setRootScriptPdfUrl(nextUrl);
       setIsRootScriptPdfModalOpen(true);
     } catch (err) {
-      console.error('Erro ao montar visualizacao em PDF', err);
-      setError('Nao foi possivel abrir a visualizacao em PDF.');
+      console.error('Erro ao montar visualiza??o em PDF', err);
+      setError('Não foi possível abrir a visualização em PDF.');
     }
   };
 
@@ -2760,7 +2778,7 @@ export default function App() {
       window.URL.revokeObjectURL(fileUrl);
     } catch (err) {
       console.error('Erro ao baixar PDF do script do raiz', err);
-      setError('Nao foi possivel baixar o PDF do script do raiz.');
+      setError('Não foi possível baixar o PDF do script do raiz.');
     }
   };
 
@@ -2780,7 +2798,7 @@ export default function App() {
 
   const handleOpenRootScriptVersion = async (version: RootScriptVersion) => {
     if (!version.content?.trim()) {
-      setError('Essa versao nao possui conteudo para abrir.');
+      setError('Essa versão não possui conteúdo para abrir.');
       return;
     }
 
@@ -2823,7 +2841,7 @@ export default function App() {
       await loadRootScriptVersions(ensuredId);
     } catch (err) {
       console.error('Erro ao atualizar status do script', err);
-      setError('Nao foi possivel mover o card no board do script do raiz.');
+      setError('Não foi possível mover o card no board do script do raiz.');
     }
   };
 
@@ -2846,7 +2864,7 @@ export default function App() {
       await loadRootScriptVersions(ensuredId);
     } catch (err) {
       console.error('Erro ao excluir card do Scrumban', err);
-      setError('Nao foi possivel excluir o card do Scrumban.');
+      setError('Não foi possível excluir o card do Scrumban.');
     }
   };
 
@@ -2862,7 +2880,7 @@ export default function App() {
       await persistRootScriptState('', false, [], null);
     } catch (err) {
       console.error('Erro ao limpar roteiro do raiz', err);
-      setError('Nao foi possivel limpar o roteiro do raiz.');
+      setError('Não foi possível limpar o roteiro do raiz.');
     }
   };
 
@@ -2888,10 +2906,10 @@ export default function App() {
 
       setCurrentRootScriptVersionId(ensuredVersionId);
       await persistRootScriptState(rootScriptDraft, rootScriptApproved, rootHeadlines, ensuredVersionId);
-      setRootHeadlinesFeedback('Roteiro enviado para o Scrumban em Em revisao.');
+      setRootHeadlinesFeedback('Roteiro enviado para o Scrumban em Em revisão.');
     } catch (err) {
       console.error('Erro ao enviar roteiro para o Scrumban', err);
-      setError('Nao foi possivel enviar o roteiro para o Scrumban.');
+      setError('Não foi possível enviar o roteiro para o Scrumban.');
     }
   };
 
@@ -2929,14 +2947,14 @@ export default function App() {
   const buildCategoryExportContent = useCallback((sectionId: string) => {
     const data = launchData ?? formDefaults ?? INITIAL_BRIEFING;
     const titleMap: Record<string, string> = {
-      'section-launch-date': 'Data do lancamento',
-      'section-product-info': 'Informacoes de Produto',
-      'section-roma-info': 'Informacoes de ROMA',
+      'section-launch-date': 'Data do lan?amento',
+      'section-product-info': 'Informações de Produto',
+      'section-roma-info': 'Informações de ROMA',
       'section-general-triggers': 'Gatilhos Mentais',
       'section-expert-info': 'Informacoes da Expert · Historia',
-      'section-avatar-info': 'Informacoes do Avatar',
-      'section-offer-info': 'Informacoes de Oferta',
-      'section-solution-info': 'Informacoes da Solucao',
+      'section-avatar-info': 'Informações do Avatar',
+      'section-offer-info': 'Informações de Oferta',
+      'section-solution-info': 'Informações da Solução',
       'section-timeline-overview': 'Linha do tempo',
       'section-theme-list': 'Lista de temas',
     };
@@ -2949,60 +2967,60 @@ export default function App() {
 
     switch (sectionId) {
       case 'section-launch-date':
-        lines.push(`Data do lancamento: ${data.launchDate || 'nao informado'}`);
-        lines.push(`Tipo de lancamento: ${data.launchType || 'classic'}`);
+        lines.push(`Data do lançamento: ${data.launchDate || 'não informado'}`);
+        lines.push(`Tipo de lan?amento: ${data.launchType || 'classic'}`);
         lines.push(`Modelo CPL 1: ${data.launchModel || 'opportunity'}`);
         break;
       case 'section-product-info':
-        lines.push(`Produto: ${data.productName || 'nao informado'}`);
-        lines.push(`Nicho: ${data.niche || 'nao informado'}`);
-        lines.push(`Publico-alvo: ${data.targetAudience || 'nao informado'}`);
-        lines.push(`Problema principal: ${data.mainProblem || 'nao informado'}`);
+        lines.push(`Produto: ${data.productName || 'não informado'}`);
+        lines.push(`Nicho: ${data.niche || 'não informado'}`);
+        lines.push(`Público-alvo: ${data.targetAudience || 'não informado'}`);
+        lines.push(`Problema principal: ${data.mainProblem || 'não informado'}`);
         break;
       case 'section-roma-info':
-        lines.push(`ROMA: ${data.mainBenefit || 'nao informado'}`);
+        lines.push(`ROMA: ${data.mainBenefit || 'não informado'}`);
         break;
       case 'section-general-triggers':
-        lines.push(data.generalTriggers || 'nao informado');
+        lines.push(data.generalTriggers || 'não informado');
         break;
       case 'section-expert-info':
-        lines.push(`Nome da expert: ${data.avatarName || 'nao informado'}`);
-        lines.push(`Historia: ${data.avatarStory || 'nao informado'}`);
+        lines.push(`Nome da expert: ${data.avatarName || 'não informado'}`);
+        lines.push(`História: ${data.avatarStory || 'não informado'}`);
         break;
       case 'section-avatar-info':
-        lines.push(`Idade: ${data.avatarAge || 'nao informado'}`);
-        lines.push(`Sexo: ${data.avatarGender || 'nao informado'}`);
-        lines.push(`Salario: ${data.avatarSalary || 'nao informado'}`);
-        lines.push(`Profissao: ${data.avatarProfession || 'nao informado'}`);
-        lines.push(`Religiao: ${data.avatarReligion || 'nao informado'}`);
-        lines.push(`Orientacao politica: ${data.avatarPoliticalOrientation || 'nao informado'}`);
-        lines.push(`Outras: ${data.avatarOtherDetails || 'nao informado'}`);
-        lines.push(`Resumo: ${data.avatarSummary || 'nao informado'}`);
-        lines.push(`Dores: ${data.avatarPains || 'nao informado'}`);
-        lines.push(`Desejos: ${data.avatarDesires || 'nao informado'}`);
-        lines.push(`Objecoes: ${data.avatarObjections || 'nao informado'}`);
-        lines.push(`Mito ROMA: ${data.avatarRomaMyth || 'nao informado'}`);
-        lines.push(`Medo: ${data.avatarFear || 'nao informado'}`);
-        lines.push(`Crencas limitantes: ${data.avatarLimitingBeliefs || 'nao informado'}`);
-        lines.push(`Abre aspas: ${data.avatarQuote || 'nao informado'}`);
-        lines.push(`Oportunidades e atalhos: ${data.avatarOpportunitiesShortcuts || 'nao informado'}`);
-        lines.push(`Pesquisa ABC: ${data.avatarResearchABC || 'nao informado'}`);
+        lines.push(`Idade: ${data.avatarAge || 'não informado'}`);
+        lines.push(`Sexo: ${data.avatarGender || 'não informado'}`);
+        lines.push(`Salário: ${data.avatarSalary || 'não informado'}`);
+        lines.push(`Profissão: ${data.avatarProfession || 'não informado'}`);
+        lines.push(`Religião: ${data.avatarReligion || 'não informado'}`);
+        lines.push(`Orientação política: ${data.avatarPoliticalOrientation || 'não informado'}`);
+        lines.push(`Outras: ${data.avatarOtherDetails || 'não informado'}`);
+        lines.push(`Resumo: ${data.avatarSummary || 'não informado'}`);
+        lines.push(`Dores: ${data.avatarPains || 'não informado'}`);
+        lines.push(`Desejos: ${data.avatarDesires || 'não informado'}`);
+        lines.push(`Objeções: ${data.avatarObjections || 'não informado'}`);
+        lines.push(`Mito ROMA: ${data.avatarRomaMyth || 'não informado'}`);
+        lines.push(`Medo: ${data.avatarFear || 'não informado'}`);
+        lines.push(`Crenças limitantes: ${data.avatarLimitingBeliefs || 'não informado'}`);
+        lines.push(`Abre aspas: ${data.avatarQuote || 'não informado'}`);
+        lines.push(`Oportunidades e atalhos: ${data.avatarOpportunitiesShortcuts || 'não informado'}`);
+        lines.push(`Pesquisa ABC: ${data.avatarResearchABC || 'não informado'}`);
         break;
       case 'section-offer-info':
-        lines.push(`Preco: ${data.price || 'nao informado'}`);
-        lines.push(`Preco ancora: ${data.anchorPrice || 'nao informado'}`);
-        lines.push(`Bonus: ${data.bonuses || 'nao informado'}`);
-        lines.push(`Garantia: ${data.guarantee || 'nao informado'}`);
-        lines.push(`Pagamento: ${data.paymentMethods || 'nao informado'}`);
-        lines.push(`Escassez: ${data.scarcity || 'nao informado'}`);
-        lines.push(`Detalhes da oferta: ${data.offerDetails || 'nao informado'}`);
-        lines.push(`Solucao CPL3: ${data.cplThreeSolution || 'nao informado'}`);
+        lines.push(`Preço: ${data.price || 'não informado'}`);
+        lines.push(`Preço âncora: ${data.anchorPrice || 'não informado'}`);
+        lines.push(`Bônus: ${data.bonuses || 'não informado'}`);
+        lines.push(`Garantia: ${data.guarantee || 'não informado'}`);
+        lines.push(`Pagamento: ${data.paymentMethods || 'não informado'}`);
+        lines.push(`Escassez: ${data.scarcity || 'não informado'}`);
+        lines.push(`Detalhes da oferta: ${data.offerDetails || 'não informado'}`);
+        lines.push(`Solução CPL3: ${data.cplThreeSolution || 'não informado'}`);
         break;
       case 'section-solution-info':
-        lines.push(`Titulo: ${publikaSummary.title || 'nao informado'}`);
-        lines.push(`Subtitulo: ${publikaSummary.subtitle || 'nao informado'}`);
-        lines.push(`Tagline: ${publikaSummary.tagline || 'nao informado'}`);
-        lines.push(`Descricao: ${publikaSummary.description || 'nao informado'}`);
+        lines.push(`Título: ${publikaSummary.title || 'não informado'}`);
+        lines.push(`Subtítulo: ${publikaSummary.subtitle || 'não informado'}`);
+        lines.push(`Tagline: ${publikaSummary.tagline || 'não informado'}`);
+        lines.push(`Descrição: ${publikaSummary.description || 'não informado'}`);
         lines.push('Highlights:');
         if (publikaSummary.highlights?.length) {
           publikaSummary.highlights.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
@@ -3012,7 +3030,7 @@ export default function App() {
         break;
       case 'section-timeline-overview':
         phaseConfig.order.forEach(phaseId => {
-          lines.push(`${phaseConfig.labels[phaseId] ?? phaseId}: ${phaseDates[phaseId] ?? 'nao informado'}`);
+          lines.push(`${phaseConfig.labels[phaseId] ?? phaseId}: ${phaseDates[phaseId] ?? 'não informado'}`);
         });
         break;
       case 'section-theme-list':
@@ -3020,7 +3038,7 @@ export default function App() {
         lines.push(`Linhas editoriais: ${selectedEditorialLines.map(item => item.title).join(' | ') || 'nenhuma'}`);
         lines.push('');
         lines.push('Script do raiz:');
-        lines.push(rootScriptDraft || 'nao gerado');
+        lines.push(rootScriptDraft || 'não gerado');
         lines.push('');
         lines.push('Headlines:');
         if (rootHeadlines.length) {
@@ -3030,7 +3048,7 @@ export default function App() {
         }
         break;
       default:
-        lines.push('Categoria sem dados para exportacao.');
+        lines.push('Categoria sem dados para exporta??o.');
     }
 
     return lines.join('\n').trim();
@@ -3298,7 +3316,7 @@ export default function App() {
                       <span className="font-semibold text-indigo-700">Debriefing em D+7</span>.
                     </p>
                     <p>
-                      Em resumo: primeiro voce constroi a lista, depois aquece os inscritos, faz a aula ao vivo no dia oficial,
+                      Em resumo: primeiro voc? constr?i a lista, depois aquece os inscritos, faz a aula ao vivo no dia oficial,
                       aproveita a janela imediata de vendas, entrega rapido para gerar resultado e finaliza documentando os aprendizados.
                     </p>
                   </div>
@@ -3315,8 +3333,8 @@ export default function App() {
                       <span className="font-semibold text-indigo-700">L3 em D+5</span>.
                     </p>
                     <p>
-                      Em resumo: primeiro voce aquece a audiencia, depois conduz os tres CPLs para gerar desejo e convencimento,
-                      abre o carrinho no dia oficial e trabalha recuperacao, objecoes e urgencia ate o fechamento final.
+                      Em resumo: primeiro você aquece a audiência, depois conduz os três CPLs para gerar desejo e convencimento,
+                      abre o carrinho no dia oficial e trabalha recuperação, objeções e urgência até o fechamento final.
                     </p>
                   </div>
                 )}
@@ -3339,13 +3357,13 @@ export default function App() {
                     <p className="text-xs font-semibold uppercase tracking-[0.4em] text-sky-500/80">Lista de temas</p>
                     <h3 className="mt-2 text-3xl font-black text-slate-900">Temas e estruturas de texto</h3>
                     <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                      A primeira coluna nasce automaticamente dos campos do avatar. Depois voce marca uma ou mais linhas
-                      editoriais e usa a estrutura de roteiro para transformar os temas em conteudo.
+                      A primeira coluna nasce automaticamente dos campos do avatar. Depois voc? marca uma ou mais linhas
+                      editoriais e usa a estrutura de roteiro para transformar os temas em conteúdo.
                     </p>
                   </div>
                   <div className="rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 text-sm text-slate-600">
                     <p className="font-semibold text-slate-900">{avatarThemeItems.length} temas capturados do avatar</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.25em] text-sky-500">Dores, desejos, objecoes, mito, medo, crencas, fala, atalhos e pesquisa</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.25em] text-sky-500">Dores, desejos, objeções, mito, medo, crenças, fala, atalhos e pesquisa</p>
                     <button
                       type="button"
                       onClick={() => handleDownloadCategory('section-theme-list')}
@@ -3362,7 +3380,7 @@ export default function App() {
                   <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Aguardando base do avatar</p>
                   <h4 className="mt-3 text-2xl font-black text-slate-900">Preencha os campos do avatar para montar a lista de temas</h4>
                   <p className="mt-3 text-sm text-slate-500">
-                    Use os blocos de dores, desejos, objecoes, mito sobre ROMA, medo, crencas limitantes, abre aspas,
+                    Use os blocos de dores, desejos, objeções, mito sobre ROMA, medo, crenças limitantes, abre aspas,
                     oportunidades e atalhos e pesquisa ABC. Cada linha preenchida vira uma opcao marcavel aqui.
                   </p>
                 </div>
@@ -3587,7 +3605,7 @@ export default function App() {
                         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Coluna 2</p>
                         <h4 className="mt-2 text-xl font-black text-slate-900">Escolher linha editorial</h4>
                         <p className="mt-2 text-sm text-slate-500">
-                          Multipla escolha: marque os formatos que melhor combinam com os temas e com a fase do lancamento.
+                          M?ltipla escolha: marque os formatos que melhor combinam com os temas e com a fase do lan?amento.
                         </p>
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -3815,7 +3833,7 @@ export default function App() {
                                           {step.id === 'contexto' && (
                                             <>
                                               <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
-                                                Pergunta guia escolhida: {contextPrompt ?? 'Escolha 1 pergunta de Contexto no cardapio.'}
+                                                Pergunta guia escolhida: {contextPrompt ?? 'Escolha 1 pergunta de Contexto no cardápio.'}
                                               </li>
                                               {step.items.map(item => (
                                                 <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
@@ -3827,7 +3845,7 @@ export default function App() {
                                           {step.id === 'beneficios' && (
                                             <>
                                               <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
-                                                Pergunta guia escolhida: {benefitPrompt ?? 'Escolha 1 pergunta de Beneficios no cardapio.'}
+                                                Pergunta guia escolhida: {benefitPrompt ?? 'Escolha 1 pergunta de Benefícios no cardápio.'}
                                               </li>
                                               {step.items.map(item => (
                                                 <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
@@ -3839,7 +3857,7 @@ export default function App() {
                                           {step.id === 'como' && (
                                             <>
                                               <li className="rounded-xl bg-indigo-50 px-3 py-2 text-indigo-900">
-                                                Pergunta guia escolhida: {howPrompt ?? 'Escolha 1 pergunta de Como fazer no cardapio.'}
+                                                Pergunta guia escolhida: {howPrompt ?? 'Escolha 1 pergunta de Como fazer no cardápio.'}
                                               </li>
                                               {step.items.map(item => (
                                                 <li key={`${block.theme.id}-${step.id}-${item}`} className="rounded-xl bg-white px-3 py-2">
@@ -3912,7 +3930,7 @@ export default function App() {
                     {isGeneratingRootHeadlines ? 'Gerando headlines...' : 'Gerar 5 headlines'}
                   </button>
                   <button type="button" onClick={handleToggleRootScriptAudio} disabled={!rootScriptDraft.trim()} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-fuchsia-300 bg-fuchsia-50 px-5 py-2.5 text-sm font-bold text-fuchsia-800 hover:border-fuchsia-400 hover:bg-fuchsia-100 disabled:opacity-60">
-                    {isSpeakingRootScript ? 'Parar audio' : 'Ouvir roteiro'}
+                    {isSpeakingRootScript ? 'Parar áudio' : 'Ouvir roteiro'}
                   </button>
                   <button type="button" onClick={handleOpenRootScriptPdfPreview} disabled={!rootScriptDraft.trim()} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-5 py-2.5 text-sm font-bold text-sky-800 hover:border-sky-400 hover:bg-sky-100 disabled:opacity-60">
                     Visualizar PDF
@@ -4101,6 +4119,39 @@ export default function App() {
               />
             </section>
 
+            <section id="section-lead-capture-prep" className="space-y-6">
+              <div className="rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-white via-indigo-50 to-sky-50 p-6 shadow-[0_12px_30px_rgba(99,102,241,0.10)]">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.4em] text-indigo-500/80">Captação de leads</p>
+                    <h3 className="mt-2 text-3xl font-black text-slate-900">{LEAD_CAPTURE_PREP_WEEK.title}</h3>
+                    <p className="mt-2 max-w-3xl text-sm text-slate-600">{LEAD_CAPTURE_PREP_WEEK.focus}</p>
+                    <p className="mt-3 rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3 text-sm text-slate-600">
+                      <span className="font-semibold text-slate-900">Nutella / Reels:</span> {LEAD_CAPTURE_PREP_WEEK.reminder}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3 text-sm text-slate-600">
+                    <p className="font-semibold text-slate-900">Semana base</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.25em] text-indigo-600">{LEAD_CAPTURE_PREP_WEEK.rangeLabel}</p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      {leadCapturePrepDays.flatMap(day => day.blocks.flatMap(block => block.tasks)).filter(task => task.done).length}
+                      {' '}de{' '}
+                      {leadCapturePrepDays.flatMap(day => day.blocks.flatMap(block => block.tasks)).length} tarefas concluídas
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <LeadCapturePreparationPanel
+                days={leadCapturePrepDays}
+                launchData={launchData}
+                onChange={days => {
+                  setLeadCapturePrepDays(days);
+                  persistLeadCapturePrepDays(days).catch(console.error);
+                }}
+              />
+            </section>
+
             <section className="space-y-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -4246,7 +4297,7 @@ export default function App() {
                         disabled={!selectedPhase.liveScript && speakingPhaseId !== selectedPhase.id}
                         className="inline-flex items-center justify-center rounded-full border border-fuchsia-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-700 hover:border-fuchsia-300 hover:bg-fuchsia-50 disabled:opacity-60"
                       >
-                        {speakingPhaseId === selectedPhase.id ? 'Parar audio' : 'Ouvir roteiro'}
+                        {speakingPhaseId === selectedPhase.id ? 'Parar áudio' : 'Ouvir roteiro'}
                       </button>
                       <button
                         type="button"
@@ -4297,7 +4348,7 @@ export default function App() {
                         Etapas operacionais da fase
                       </p>
                       <span className="text-xs font-semibold text-emerald-700">
-                        {(selectedPhase.tasks ?? []).filter(task => task.done).length}/{(selectedPhase.tasks ?? []).length} concluÃ­das
+                        {(selectedPhase.tasks ?? []).filter(task => task.done).length}/{(selectedPhase.tasks ?? []).length} concluídas
                       </span>
                     </div>
                     {(selectedPhase.tasks ?? []).length ? (
@@ -4370,7 +4421,7 @@ export default function App() {
                                 }
                                 className="rounded-full border border-fuchsia-200 bg-white px-3 py-1 text-xs font-semibold text-fuchsia-700"
                               >
-                                <option value="none">Sem geracao</option>
+                                <option value="none">Sem geração</option>
                                 <option value="text">Gera texto</option>
                                 <option value="image">Gera imagem</option>
                               </select>
@@ -4421,7 +4472,7 @@ export default function App() {
                                   >
                                     {savingTaskKey === getTaskActionKey(selectedPhase.id, task.id, 'save')
                                       ? 'Salvando...'
-                                      : 'Salvar conteudo'}
+                                      : 'Salvar conteúdo'}
                                   </button>
                                 </div>
                                 <textarea

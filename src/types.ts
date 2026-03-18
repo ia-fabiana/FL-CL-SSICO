@@ -166,6 +166,7 @@ export interface StoredBriefing extends LaunchData {
   rootScriptDurationMinutes?: number;
   rootScriptActiveVersionId?: string;
   audienceDays?: AudienceDay[];
+  leadCapturePrepDays?: LeadCapturePrepDay[];
   createdAt?: unknown;
   updatedAt?: unknown;
 }
@@ -224,4 +225,30 @@ export interface AudienceDay {
   date?: string;
   label: string;
   tasks: AudienceTask[];
+}
+
+export interface LeadCapturePrepTask {
+  id: string;
+  title: string;
+  done: boolean;
+  doneAt?: string;
+  notes?: string;
+  promptHint?: string;
+  contentMode?: 'text';
+  contentDraft?: string;
+  contentSavedAt?: string;
+}
+
+export interface LeadCapturePrepBlock {
+  id: string;
+  title: string;
+  description?: string;
+  tasks: LeadCapturePrepTask[];
+}
+
+export interface LeadCapturePrepDay {
+  id: string;
+  date?: string;
+  label: string;
+  blocks: LeadCapturePrepBlock[];
 }

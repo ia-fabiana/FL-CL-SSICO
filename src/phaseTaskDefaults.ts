@@ -238,36 +238,36 @@ const CLASSIC_DEFAULTS: Record<string, PhaseTask[]> = {
 
 const SEED_DEFAULTS: Record<string, PhaseTask[]> = {
   CLI: [
-    createTask('seed-cli-pagina', 'Criar pagina de inscricao', 'Suba landing com formulario e pagina de obrigado.', {
+    createTask('seed-cli-pagina', 'Criar página de inscrição', 'Suba landing com formulário e página de obrigado.', {
       dueOffsetDays: -14,
       proofRequired: true,
     }),
-    createTask('seed-cli-campanhas', 'Criar campanhas de captacao', 'Planeje organic e/ou trafego pago para captar inscritos.', {
+    createTask('seed-cli-campanhas', 'Criar campanhas de captação', 'Planeje orgânico e/ou tráfego pago para captar inscritos.', {
       dueOffsetDays: -13,
     }),
-    createTask('seed-cli-metas', 'Definir metas e orcamentos', 'Defina meta de inscritos, CAC e verba diaria.', {
+    createTask('seed-cli-metas', 'Definir metas e orçamentos', 'Defina meta de inscritos, CAC e verba diária.', {
       dueOffsetDays: -12,
       contentMode: 'text',
     }),
-    createTask('seed-cli-criativos', 'Produzir criativos para anuncios', 'Crie copys e criativos com CTA para inscricao.', {
+    createTask('seed-cli-criativos', 'Produzir criativos para anúncios', 'Crie copys e criativos com CTA para inscrição.', {
       dueOffsetDays: -11,
       contentMode: 'image',
       proofRequired: true,
     }),
-    createTask('seed-cli-comunicacao', 'Configurar ferramentas de comunicacao', 'Ajuste emails, WhatsApp e automacoes para confirmacao.', {
+    createTask('seed-cli-comunicacao', 'Configurar ferramentas de comunicação', 'Ajuste emails, WhatsApp e automações para confirmação.', {
       dueOffsetDays: -10,
       contentMode: 'text',
     }),
   ],
   AL: [
-    createTask('seed-al-emails', 'Enviar sequencia de aquecimento', 'Dispare emails e mensagens de aquecimento ate o dia da aula.', {
+    createTask('seed-al-emails', 'Enviar sequência de aquecimento', 'Dispare emails e mensagens de aquecimento até o dia da aula.', {
       dueOffsetDays: -6,
       contentMode: 'text',
     }),
-    createTask('seed-al-conteudos', 'Preparar conteudos de engajamento', 'Organize posts, stories e interacoes para manter interesse.', {
+    createTask('seed-al-conteudos', 'Preparar conteúdos de engajamento', 'Organize posts, stories e interações para manter interesse.', {
       dueOffsetDays: -5,
     }),
-    createTask('seed-al-beneficios', 'Reforcar beneficios da aula', 'Reforce a promessa e o valor do webinario.', {
+    createTask('seed-al-beneficios', 'Reforçar benefícios da aula', 'Reforce a promessa e o valor do webinário.', {
       dueOffsetDays: -4,
       contentMode: 'text',
     }),
@@ -277,7 +277,7 @@ const SEED_DEFAULTS: Record<string, PhaseTask[]> = {
     }),
   ],
   SEED_WEBINAR: [
-    createTask('seed-webinar-roteiro', 'Escrever roteiro do webinario', 'Estruture promessa, conteudo, prova e oferta final.', {
+    createTask('seed-webinar-roteiro', 'Escrever roteiro do webinário', 'Estruture promessa, conteúdo, prova e oferta final.', {
       dueOffsetDays: -2,
       contentMode: 'text',
     }),
@@ -285,21 +285,21 @@ const SEED_DEFAULTS: Record<string, PhaseTask[]> = {
       dueOffsetDays: -2,
       proofRequired: true,
     }),
-    createTask('seed-webinar-ensaio', 'Ensaiar abertura e transicoes', 'Teste abertura, ritmo e chamada para oferta.', {
+    createTask('seed-webinar-ensaio', 'Ensaiar abertura e transições', 'Teste abertura, ritmo e chamada para oferta.', {
       dueOffsetDays: -1,
       proofRequired: true,
     }),
   ],
   SEED_CART: [
-    createTask('seed-cart-checkout', 'Validar checkout e pagina de obrigado', 'Teste pagamentos e mensagem de confirmacao.', {
+    createTask('seed-cart-checkout', 'Validar checkout e página de obrigado', 'Teste pagamentos e mensagem de confirmação.', {
       dueOffsetDays: 0,
       proofRequired: true,
     }),
-    createTask('seed-cart-mensagens', 'Enviar mensagens de carrinho aberto', 'Dispare emails e WhatsApp com oferta e gravacao.', {
+    createTask('seed-cart-mensagens', 'Enviar mensagens de carrinho aberto', 'Dispare emails e WhatsApp com oferta e gravação.', {
       dueOffsetDays: 0,
       contentMode: 'text',
     }),
-    createTask('seed-cart-duvidas', 'Responder duvidas e objecoes', 'Atenda leads quentes e remova bloqueios de compra.', {
+    createTask('seed-cart-duvidas', 'Responder dúvidas e objeções', 'Atenda leads quentes e remova bloqueios de compra.', {
       dueOffsetDays: 1,
       proofRequired: true,
     }),
@@ -318,7 +318,7 @@ const SEED_DEFAULTS: Record<string, PhaseTask[]> = {
     }),
   ],
   SEED_DEBRIEF: [
-    createTask('seed-debrief-analise', 'Conduzir debriefing', 'Analise conversao, objecoes, mensagens e melhorias.', {
+    createTask('seed-debrief-analise', 'Conduzir debriefing', 'Analise conversão, objeções, mensagens e melhorias.', {
       dueOffsetDays: 5,
       contentMode: 'text',
     }),

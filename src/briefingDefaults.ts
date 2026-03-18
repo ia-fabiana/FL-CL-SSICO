@@ -3,18 +3,18 @@ import { LaunchData } from './types';
 export const IA_FABIANA_BRIEFING: LaunchData = {
   generalTriggers: `Autoridade - prova de experiencia, resultados e dominio do tema.
 Prova social - quantidade de alunos, comentarios, casos e comunidade ativa.
-Reciprocidade - entregar valor antes de pedir a inscricao.
+Reciprocidade - entregar valor antes de pedir a inscrição.
 Urgencia - prazo real para acao (data e hora).
 Escassez - vagas limitadas, bonus que expiram ou lote final.
 Pertencimento - reforco de comunidade, grupo e identidade.
 Antecipacao - deixar claro o que vem a seguir e por que esperar.
 Curiosidade - abrir loops e perguntas que puxam o proximo passo.
 Especificidade - dados, numeros e exemplos concretos.
-Historia - narrativa curta que conecta dor e solucao.
+História - narrativa curta que conecta dor e solução.
 Razao - logica e justificativa do caminho proposto.
 Compromisso - pequenos sims antes do sim maior.
-Desapego - mostrar que esta tudo bem nao comprar (aumenta confiança).
-Perda evitavel - custo de nao agir agora.
+Desapego - mostrar que está tudo bem não comprar (aumenta confiança).
+Perda evitável - custo de não agir agora.
 Transformacao - contraste entre antes e depois com clareza.
 Simplicidade - deixar facil o proximo passo e reduzir friccao.
 Seguranca - garantias e suporte explicitos.

@@ -1,0 +1,10 @@
+{
+  "projectKey": "fl-classico",
+  "displayName": "FL - Lancamento Classico",
+  "packageName": "react-example",
+  "firebaseProjectId": "fl-classico",
+  "firebaseAuthDomain": "fl-classico.firebaseapp.com",
+  "firebaseStorageBucket": "fl-classico.firebasestorage.app",
+  "metadataName": "LANCAMENTO CLASSICO",
+  "htmlTitleIncludes": "FL - Lancamento Classico"
+}

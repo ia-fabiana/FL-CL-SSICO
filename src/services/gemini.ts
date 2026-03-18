@@ -1,6 +1,6 @@
 ﻿import { GoogleGenAI, Type } from "@google/genai";
 import { GuidedFieldKey, getFieldPrompt, getLaunchDataSnapshot } from "../guidance";
-import { AudienceImageSpec, GuidanceEntry, LaunchData, LaunchPlan, LaunchPhase, PhaseTask, TaskContentMode } from "../types";
+import { AudienceImageSpec, GuidanceEntry, LaunchData, LaunchPlan, LaunchPhase, LeadCapturePrepTask, PhaseTask, TaskContentMode } from "../types";
 import { DEFAULT_SCRIPT_DURATION_MINUTES, ESTIMATED_WORDS_PER_MINUTE } from "../constants";
 const launchModelLabel = (model: LaunchData['launchModel']): string => {
   return model === 'opportunity'
@@ -34,7 +34,7 @@ const getGuidedFieldInstruction = (field: GuidedFieldKey): string => {
     - Converta TODOS os pontos importantes em fatos explicitos no texto final.
     - Respeite a ordem e a logica da estrutura/gatilhos enviada pelo estrategista.
     - Se houver gatilhos como autoridade, prova, similaridade, procedencia ou virada, eles precisam aparecer de forma perceptivel dentro da narrativa.
-    - Nao entregue uma historia generica: preserve nomes, marcos, dores, conquistas, causa e transformacao sempre que forem informados.
+    - Não entregue uma história genérica: preserve nomes, marcos, dores, conquistas, causa e transformação sempre que forem informados.
     - Se algum ponto importante e a estrutura parecerem conflitantes, priorize conciliar os dois sem omitir fatos.
     - Entregue em markdown.
     - Todo gatilho mental usado no texto deve estar em **negrito** (isso vira rosa na interface).
@@ -50,7 +50,7 @@ const getGuidedFieldInstruction = (field: GuidedFieldKey): string => {
   Regras obrigatorias:
   - Incorpore todos os pontos importantes enviados pelo estrategista.
   - Siga a estrutura/gatilhos sempre que ela for fornecida.
-  - Nao devolva texto generico nem omita itens explicitos do briefing.
+  - Não devolva texto genérico nem omita itens explícitos do briefing.
   `;
 };
 
@@ -104,40 +104,40 @@ export async function generateLaunchOverview(data: LaunchData): Promise<LaunchPl
        - PL (Pré-Lançamento): CPL 1, CPL 2, CPL 3
        - L (Lançamento): Abertura do carrinho e fechamento.`;
   const prompt = `
-    Atue como um especialista em FÃ³rmula de LanÃ§amento (Erico Rocha). 
-    Crie uma VISÃƒO GERAL e ESTRUTURA de ${launchTypeLabel(data.launchType)} para o seguinte produto:
+    Atue como um especialista em Fórmula de Lançamento (Erico Rocha).
+    Crie uma VISÃO GERAL e ESTRUTURA de ${launchTypeLabel(data.launchType)} para o seguinte produto:
     
     Produto: ${data.productName}
     Nicho: ${data.niche}
-    PÃºblico-Alvo: ${data.targetAudience}
+    Público-Alvo: ${data.targetAudience}
     Nome interno do Avatar: ${data.avatarName}
     Problema Principal: ${data.mainProblem}
-    BenefÃ­cio Principal: ${data.mainBenefit}
-    HistÃ³ria Atual do Avatar (informada pelo estrategista): ${data.avatarStory}
+    Benefício Principal: ${data.mainBenefit}
+    História Atual do Avatar (informada pelo estrategista): ${data.avatarStory}
     Base de conhecimento do avatar:
     ${avatarKnowledgeBase(data)}
-    Sinalizado para o CPL 3 (demonstraÃ§Ã£o/soluÃ§Ã£o): ${data.cplThreeSolution}
+    Sinalizado para o CPL 3 (demonstração/solução): ${data.cplThreeSolution}
     
     DETALHES DA OFERTA:
-    PreÃ§o de Venda: ${data.price}
-    PreÃ§o de Ã‚ncora: ${data.anchorPrice || 'NÃ£o informado'}
-    BÃ´nus: ${data.bonuses}
+    Preço de Venda: ${data.price}
+    Preço de Âncora: ${data.anchorPrice || 'Não informado'}
+    Bônus: ${data.bonuses}
     Garantia: ${data.guarantee}
     Formas de Pagamento: ${data.paymentMethods}
-    Escassez/UrgÃªncia: ${data.scarcity}
+    Escassez/Urgência: ${data.scarcity}
     Outros Detalhes: ${data.offerDetails}
     
-    Data de InÃ­cio: ${data.launchDate}
+    Data de Início: ${data.launchDate}
     Modelo de CPL 1: ${launchModelLabel(data.launchModel)}
     Tipo de Lançamento: ${launchTypeLabel(data.launchType)}
-    Gatilhos gerais: ${data.generalTriggers || 'nao informado'}
+    Gatilhos gerais: ${data.generalTriggers || 'não informado'}
 
     O plano deve conter:
-    1. HistÃ³ria do Avatar: Uma narrativa detalhada sobre a jornada do cliente ideal.
-    2. EstratÃ©gia de Redes Sociais: Como se posicionar no Instagram/YouTube.
-    3. ExplicaÃ§Ã£o do Modelo: Por que usar o modelo "${data.launchModel}".
-    4. SNA (Sistema de NotificaÃ§Ã£o de AudiÃªncia): EstratÃ©gia de grupos de WhatsApp e Telegram.
-    5. Mapa de EntregÃ¡veis (Insider): Lista de tudo que precisa ser feito.
+    1. História do Avatar: Uma narrativa detalhada sobre a jornada do cliente ideal.
+    2. Estratégia de Redes Sociais: Como se posicionar no Instagram/YouTube.
+    3. Explicação do Modelo: Por que usar o modelo "${data.launchModel}".
+    4. SNA (Sistema de Notificação de Audiência): Estratégia de grupos de WhatsApp e Telegram.
+    5. Mapa de Entregáveis (Insider): Lista de tudo que precisa ser feito.
     ${structureBlock}
 
     Retorne a resposta estritamente no formato JSON solicitado.
@@ -186,47 +186,47 @@ export async function generatePhaseDetails(
   const webinarPhase = isWebinarPhase(phase);
   const estimatedWordCount = Math.round(durationMinutes * ESTIMATED_WORDS_PER_MINUTE);
   const prompt = `
-    VocÃª Ã© copywriter sÃªnior da FÃ³rmula de LanÃ§amento.
-    Escreva UM ÃšNICO ROTEIRO LONGO para a fase "${phase.name}" do produto "${data.productName}".
+    Você é copywriter sênior da Fórmula de Lançamento.
+    Escreva UM ÚNICO ROTEIRO LONGO para a fase "${phase.name}" do produto "${data.productName}".
 
-    Objetivo: produzir o texto completo que serÃ¡ lido em uma live (tom de conversa guiada, ritmo natural, transiÃ§Ãµes claras).
-    NÃ£o crie listas de entregÃ¡veis, emails, anÃºncios ou posts isolados. Gera um Ãºnico texto contÃ­nuo.
+    Objetivo: produzir o texto completo que será lido em uma live (tom de conversa guiada, ritmo natural, transições claras).
+    Não crie listas de entregáveis, emails, anúncios ou posts isolados. Gere um único texto contínuo.
 
     Contexto:
-    - PÃºblico: ${data.targetAudience}
+    - Público: ${data.targetAudience}
     - Avatar: ${data.avatarName}
     - Promessa: ${data.mainBenefit}
     - Modelo de CPL 1: ${launchModelLabel(data.launchModel)}
-    - Tipo de lancamento: ${launchTypeLabel(data.launchType)}
-    - Gatilhos gerais: ${data.generalTriggers || 'nao informado'}
+    - Tipo de lançamento: ${launchTypeLabel(data.launchType)}
+    - Gatilhos gerais: ${data.generalTriggers || 'não informado'}
     - Base de conhecimento do avatar:
     ${avatarKnowledgeBase(data)}
-    - DemonstraÃ§Ã£o do CPL3: ${data.cplThreeSolution}
+    - Demonstração do CPL3: ${data.cplThreeSolution}
     ${webinarPhase
-      ? `- Oferta: ${data.price} (Ã¢ncora ${data.anchorPrice || 'nÃ£o informada'}), bÃ´nus ${data.bonuses}, garantia ${data.guarantee}, pagamento ${data.paymentMethods}, escassez ${data.scarcity}`
-      : '- Restricao critica: nao use Informacoes de Oferta como base de conhecimento nesta fase. Isso so e permitido em webinarios.'}
+      ? `- Oferta: ${data.price} (âncora ${data.anchorPrice || 'não informada'}), bônus ${data.bonuses}, garantia ${data.guarantee}, pagamento ${data.paymentMethods}, escassez ${data.scarcity}`
+      : '- Restrição crítica: não use Informações de Oferta como base de conhecimento nesta fase. Isso só é permitido em webinários.'}
 
     Diretrizes personalizadas do estrategista para esta fase:
-    - Pontos essenciais: ${guidance?.keyPoints || 'nÃ£o informado'}
-    - Estrutura / gatilhos: ${guidance?.framework || 'nÃ£o informado'}
+    - Pontos essenciais: ${guidance?.keyPoints || 'não informado'}
+    - Estrutura / gatilhos: ${guidance?.framework || 'não informado'}
 
-    DescriÃ§Ã£o oficial da fase: ${phase.description}
+    Descrição oficial da fase: ${phase.description}
 
     Tempo orientado:
-    - Produza um roteiro que preencha cerca de ${durationMinutes} minutos de apresentaÃ§Ã£o ao vivo.
-    - Utilize esse tempo para conduzir a audiÃªncia com fluidez, considerando um ritmo aproximado de ${ESTIMATED_WORDS_PER_MINUTE} palavras por minuto (aprox. ${estimatedWordCount} palavras no total).
+    - Produza um roteiro que preencha cerca de ${durationMinutes} minutos de apresentação ao vivo.
+    - Utilize esse tempo para conduzir a audiência com fluidez, considerando um ritmo aproximado de ${ESTIMATED_WORDS_PER_MINUTE} palavras por minuto (aprox. ${estimatedWordCount} palavras no total).
 
     Formato do resultado:
-    - Texto Ãºnico, sem tÃ³picos ou marcadores.
+    - Texto único, sem tópicos ou marcadores.
     ${webinarPhase
-      ? '- Inclua aberturas, storytelling, quebras de padrao, prova, oferta e CTA seguindo a estrutura indicada.'
-      : '- Inclua aberturas, storytelling, quebras de padrao, prova e CTA seguindo a estrutura indicada (sem usar oferta como base de conhecimento).'}
-    - Utilize subtÃ­tulos curtos SOMENTE se a prÃ³pria estrutura exigir (ex.: "Bloco 1 - Quebra de padrÃ£o"), caso contrÃ¡rio mantenha parÃ¡grafos.
-    - Linguagem em portuguÃªs brasileiro, voz consultiva e energia de live.
-    - Sempre que citar diretamente os "Pontos essenciais" ou a "Estrutura / gatilhos" fornecidos, envolva esse trecho com <span style="color:#2563eb;font-weight:600">â€¦</span> para destacÃ¡-lo em azul.
+      ? '- Inclua aberturas, storytelling, quebras de padrão, prova, oferta e CTA seguindo a estrutura indicada.'
+      : '- Inclua aberturas, storytelling, quebras de padrão, prova e CTA seguindo a estrutura indicada (sem usar oferta como base de conhecimento).'}
+    - Utilize subtítulos curtos SOMENTE se a própria estrutura exigir (ex.: "Bloco 1 - Quebra de padrão"), caso contrário mantenha parágrafos.
+    - Linguagem em português brasileiro, voz consultiva e energia de live.
+    - Sempre que citar diretamente os "Pontos essenciais" ou a "Estrutura / gatilhos" fornecidos, envolva esse trecho com <span style="color:#2563eb;font-weight:600">...</span> para destacá-lo em azul.
     - No corpo do roteiro, destaque em rosa cada palavra ou frase que represente gatilho mental usando <span style="color:#ec4899;font-weight:700">...</span>.
-    - Apos concluir o roteiro, adicione um bloco intitulado "## Gatilhos utilizados" contendo uma lista dos gatilhos realmente aplicados. Cada gatilho deve estar dentro de <span style="color:#ec4899;font-weight:700">Nome do gatilho</span> seguido de uma breve explicacao.
-    - Distribua o conteÃºdo para ocupar os ${durationMinutes} minutos solicitados, evitando acelerar demais o ritmo ou encurtar blocos importantes.
+    - Após concluir o roteiro, adicione um bloco intitulado "## Gatilhos utilizados" contendo uma lista dos gatilhos realmente aplicados. Cada gatilho deve estar dentro de <span style="color:#ec4899;font-weight:700">Nome do gatilho</span> seguido de uma breve explicação.
+    - Distribua o conteúdo para ocupar os ${durationMinutes} minutos solicitados, evitando acelerar demais o ritmo ou encurtar blocos importantes.
   `;
 
   const response = await getAiClient().models.generateContent({
@@ -236,7 +236,7 @@ export async function generatePhaseDetails(
 
   const output = response.text?.trim() ?? '';
   if (!output) {
-    throw new Error('A IA nao retornou texto para este processamento.');
+    throw new Error('A IA não retornou texto para este processamento.');
   }
 
   return output;
@@ -283,20 +283,20 @@ ${questionBlock || '  - Nenhuma pergunta selecionada'}`;
     .join('\n');
 
   const prompt = `
-    Voce e copywriter senior da Formula de Lancamento.
-    Escreva UM UNICO ROTEIRO LONGO para um conteudo RAIZ alinhado a ROMA do projeto abaixo.
+    Você é copywriter sênior da Fórmula de Lançamento.
+    Escreva UM ÚNICO ROTEIRO LONGO para um conteúdo RAIZ alinhado à ROMA do projeto abaixo.
 
     Contexto central:
     - Produto: ${data.productName}
     - Nicho: ${data.niche}
-    - Publico: ${data.targetAudience}
+    - Público: ${data.targetAudience}
     - Avatar: ${data.avatarName}
     - Problema principal: ${data.mainProblem}
     - ROMA / Promessa central: ${data.mainBenefit}
-    - Modelo de lancamento: ${launchTypeLabel(data.launchType)}
+    - Modelo de lançamento: ${launchTypeLabel(data.launchType)}
     - Modelo narrativo: ${launchModelLabel(data.launchModel)}
-    - Gatilhos gerais: ${data.generalTriggers || 'nao informado'}
-    - Restricao critica: Informacoes de Oferta nao podem ser usadas como base de conhecimento neste roteiro. Isso so e permitido em webinarios.
+    - Gatilhos gerais: ${data.generalTriggers || 'não informado'}
+    - Restrição crítica: Informações de Oferta não podem ser usadas como base de conhecimento neste roteiro. Isso só é permitido em webinários.
     - Base de conhecimento do avatar:
     ${avatarKnowledgeBase(data)}
 
@@ -306,49 +306,49 @@ ${questionBlock || '  - Nenhuma pergunta selecionada'}`;
     Temas e perguntas selecionadas:
     ${selectedThemesBlock}
 
-    Controle da solicitacao:
-    - Token unico da geracao: ${input.requestToken || 'nao informado'}
-    ${input.regenerationHint ? `- Instrucao de nova versao: ${input.regenerationHint}` : ''}
+    Controle da solicitação:
+    - Token único da geração: ${input.requestToken || 'não informado'}
+    ${input.regenerationHint ? `- Instrução de nova versão: ${input.regenerationHint}` : ''}
 
-    Regras obrigatorias:
-    - O roteiro inteiro precisa reforcar e proteger a ROMA "${data.mainBenefit}".
-    - Nao se desvie da promessa central. Todo bloco deve servir para tornar a ROMA mais clara, desejavel e crivel.
+    Regras obrigatórias:
+    - O roteiro inteiro precisa reforçar e proteger a ROMA "${data.mainBenefit}".
+    - Não se desvie da promessa central. Todo bloco deve servir para tornar a ROMA mais clara, desejável e crível.
     - Responda explicitamente as perguntas escolhidas pelo estrategista.
-    - Use os temas escolhidos como eixo do conteudo, sem perder coerencia com o avatar.
+    - Use os temas escolhidos como eixo do conteúdo, sem perder coerência com o avatar.
     - Misture as linhas editoriais escolhidas apenas quando fizer sentido narrativo.
     - O roteiro deve seguir esta ordem:
-      1. Introducao
+      1. Introdução
       2. Contexto
-      3. Beneficios
+      3. Benefícios
       4. Como
       5. Elementos complementares (somente se houver perguntas extras selecionadas)
       6. Fechamento com CTA coerente com a ROMA
-    - Produza cerca de ${input.durationMinutes} minutos de apresentacao ao vivo.
+    - Produza cerca de ${input.durationMinutes} minutos de apresentação ao vivo.
     - Considere aproximadamente ${ESTIMATED_WORDS_PER_MINUTE} palavras por minuto (aprox. ${estimatedWordCount} palavras no total).
 
     Formato do resultado:
     - Entregue em texto puro com estrutura markdown.
-    - Use titulos como "# Roteiro do Raiz", "## Introducao", "## Contexto", "## Beneficios", "## Como", "## Elementos complementares", "## Fechamento".
-    - Dentro de cada secao, escreva o roteiro em paragrafos prontos para leitura, nao apenas bullets soltos.
+    - Use títulos como "# Roteiro do Raiz", "## Introdução", "## Contexto", "## Benefícios", "## Como", "## Elementos complementares", "## Fechamento".
+    - Dentro de cada seção, escreva o roteiro em parágrafos prontos para leitura, não apenas bullets soltos.
     - Se usar bullets, use apenas para resumir perguntas escolhidas antes de desenvolver o texto.
-    - Linguagem em portugues brasileiro, energia consultiva e ritmo de aula/live.
+    - Linguagem em português brasileiro, energia consultiva e ritmo de aula/live.
     - Marque em rosa todos os gatilhos mentais do texto usando markdown em negrito: **trecho de gatilho mental**.
     - Marque em azul os trechos que vierem da base de conhecimento usando markdown de codigo inline: \`trecho vindo da base\`.
     - Regra critica: nenhum gatilho mental pode aparecer sem ** **.
-    - Regra critica: nenhuma informacao da base de conhecimento pode aparecer sem \` \`.
-    - Se uma frase combinar gatilho mental e base de conhecimento, aplique ambas as marcacoes preservando legibilidade (priorize separar em dois trechos proximos quando necessario).
-    - Revise o texto antes de finalizar e corrija qualquer trecho que esteja sem marcacao obrigatoria.
-    - Considere como "base de conhecimento" qualquer informacao derivada de:
-      1. Informacoes da Expert · Historia
-      2. Informacoes de Produto
-      3. Informacoes de ROMA
-      4. Informacoes de Avatar
-      5. Informacoes da Solucao
-    - Regra critica: Informacoes de Oferta nao entram como base de conhecimento no roteiro do raiz (uso permitido somente em webinarios).
-    - Ao final, adicione a secao "## Mapa de marcacoes" com:
+    - Regra crítica: nenhuma informação da base de conhecimento pode aparecer sem \` \`.
+    - Se uma frase combinar gatilho mental e base de conhecimento, aplique ambas as marcações preservando legibilidade (priorize separar em dois trechos próximos quando necessário).
+    - Revise o texto antes de finalizar e corrija qualquer trecho que esteja sem marcação obrigatória.
+    - Considere como "base de conhecimento" qualquer informação derivada de:
+      1. Informações da Expert · História
+      2. Informações de Produto
+      3. Informações de ROMA
+      4. Informações de Avatar
+      5. Informações da Solução
+    - Regra crítica: Informações de Oferta não entram como base de conhecimento no roteiro do raiz (uso permitido somente em webinários).
+    - Ao final, adicione a seção "## Mapa de marcações" com:
       - "### Gatilhos mentais (rosa)" listando os gatilhos realmente usados no roteiro.
       - "### Base de conhecimento (azul)" listando quais fontes da base foram utilizadas no texto.
-    - Nao use HTML para colorir, nao use spans; use somente markdown com ** ** e \` \` para que a interface aplique as cores automaticamente.
+    - Não use HTML para colorir, não use spans; use somente markdown com ** ** e \` \` para que a interface aplique as cores automaticamente.
     - Se houver "Instrucao de nova versao", mantenha o mesmo objetivo, mas mude a abordagem narrativa, exemplos e encadeamento para entregar uma versao claramente diferente da anterior.
   `;
 
@@ -395,13 +395,13 @@ export async function generateRootHeadlines(
   const scriptForPrompt = truncateScriptForHeadlines(rootScript);
 
   const prompt = `
-    Voce e copywriter senior da Formula de Lancamento.
+    Você é copywriter sênior da Fórmula de Lançamento.
     Gere 5 headlines altamente atrativas e com forte efeito de curiosidade, com base no roteiro abaixo.
 
     Contexto:
     - Produto: ${data.productName}
     - Nicho: ${data.niche}
-    - Publico: ${data.targetAudience}
+    - Público: ${data.targetAudience}
     - Avatar: ${data.avatarName}
     - Problema principal: ${data.mainProblem}
     - ROMA / Promessa central: ${data.mainBenefit}
@@ -413,7 +413,7 @@ export async function generateRootHeadlines(
     - Entregar EXATAMENTE 5 headlines.
     - Cada headline deve ser curta, clara e com gancho de curiosidade.
     - Evite clickbait vazio; manter coerencia com a promessa da ROMA.
-    - Nao repetir a mesma estrutura de frase nas 5 opcoes.
+    - Não repetir a mesma estrutura de frase nas 5 opções.
     - Portugues brasileiro.
 
     Retorne somente JSON no formato pedido.
@@ -462,8 +462,8 @@ export async function generateRootHeadlines(
       Gere exatamente 5 headlines curtas em portugues brasileiro para o roteiro abaixo.
       Regras:
       - Uma headline por linha.
-      - Nao use JSON.
-      - Nao use texto extra.
+      - Não use JSON.
+      - Não use texto extra.
       Roteiro:
       ${scriptForPrompt}
     `,
@@ -491,55 +491,55 @@ export async function generateGuidedFieldCopy(
   const hasKeyPoints = Boolean(guidance?.keyPoints?.trim());
   const hasFramework = Boolean(guidance?.framework?.trim());
   const expertPreliminaryContext = `
-Nome da expert: ${data.avatarName || 'nao informado'}
-Historia atual da expert: ${data.avatarStory || 'nao informado'}
-Nicho: ${data.niche || 'nao informado'}
-Publico-alvo: ${data.targetAudience || 'nao informado'}
-Problema principal: ${data.mainProblem || 'nao informado'}
-ROMA / Beneficio principal: ${data.mainBenefit || 'nao informado'}
-Produto / metodo: ${data.productName || 'nao informado'}
-Instagram @: ${data.expertInstagramHandle || 'nao informado'}
-Instagram URL: ${data.expertInstagramUrl || 'nao informado'}
-Link principal da bio: ${data.expertLinkInBio || 'nao informado'}
-Foto de referencia da expert (URL): ${data.expertPhotoReferenceUrl || 'nao informado'}
-Guia de roupa/visual: ${data.expertLookGuide || 'nao informado'}
-Imagem de referencia da roupa (URL): ${data.expertLookReferenceUrl || 'nao informado'}
-Guia de ambiente/cenario: ${data.expertEnvironmentGuide || 'nao informado'}
-Imagem de referencia do ambiente (URL): ${data.expertEnvironmentReferenceUrl || 'nao informado'}
-Direcao artistica: ${data.expertArtDirection || 'nao informado'}
+Nome da expert: ${data.avatarName || 'não informado'}
+História atual da expert: ${data.avatarStory || 'não informado'}
+Nicho: ${data.niche || 'não informado'}
+Público-alvo: ${data.targetAudience || 'não informado'}
+Problema principal: ${data.mainProblem || 'não informado'}
+ROMA / Benefício principal: ${data.mainBenefit || 'não informado'}
+Produto / método: ${data.productName || 'não informado'}
+Instagram @: ${data.expertInstagramHandle || 'não informado'}
+Instagram URL: ${data.expertInstagramUrl || 'não informado'}
+Link principal da bio: ${data.expertLinkInBio || 'não informado'}
+Foto de referência da expert (URL): ${data.expertPhotoReferenceUrl || 'não informado'}
+Guia de roupa/visual: ${data.expertLookGuide || 'não informado'}
+Imagem de referência da roupa (URL): ${data.expertLookReferenceUrl || 'não informado'}
+Guia de ambiente/cenário: ${data.expertEnvironmentGuide || 'não informado'}
+Imagem de referência do ambiente (URL): ${data.expertEnvironmentReferenceUrl || 'não informado'}
+Direção artística: ${data.expertArtDirection || 'não informado'}
 Base ampliada do avatar:
 ${avatarKnowledgeBase(data)}
   `.trim();
 
   const prompt = `
-    VocÃª Ã© uma estrategista sÃªnior da FÃ³rmula de LanÃ§amento.
+    Você é uma estrategista sênior da Fórmula de Lançamento.
     Com base nos dados do briefing abaixo, reescreva o campo "${field}".
 
     Objetivo do campo: ${descriptor}
 
     Pontos importantes informados:
-    ${guidance?.keyPoints || 'NÃ£o fornecido'}
+    ${guidance?.keyPoints || 'Não fornecido'}
 
     Estrutura, gatilhos ou frameworks desejados:
-    ${guidance?.framework || 'NÃ£o fornecido'}
+    ${guidance?.framework || 'Não fornecido'}
 
-    Base preliminar da expert e da audiencia (obrigatoria para este processamento):
-    ${field === 'avatarStory' ? expertPreliminaryContext : 'nao se aplica'}
+    Base preliminar da expert e da audiência (obrigatória para este processamento):
+    ${field === 'avatarStory' ? expertPreliminaryContext : 'não se aplica'}
 
-    Dados do diagnÃ³stico:
+    Dados do diagnóstico:
     ${JSON.stringify(context, null, 2)}
 
     ${getGuidedFieldInstruction(field)}
 
-    Regras finais de execucao:
-    - Gere um texto unico, direto e pronto para ser usado no campo alvo.
-    - Use tom consultivo e evite repeticoes.
+    Regras finais de execução:
+    - Gere um texto único, direto e pronto para ser usado no campo alvo.
+    - Use tom consultivo e evite repetições.
     - ${field === 'avatarStory'
-      ? 'Para avatarStory, use markdown e mantenha os titulos de apoio minimos (ex.: ## Historia).'
-      : 'Nao explique seu raciocinio, nao use listas e nao adicione observacoes fora do texto final.'}
+      ? 'Para avatarStory, use markdown e mantenha os títulos de apoio mínimos (ex.: ## História).'
+      : 'Não explique seu raciocínio, não use listas e não adicione observações fora do texto final.'}
     - ${hasKeyPoints || hasFramework
-      ? 'Considere os pontos importantes e a estrutura/gatilhos como requisitos obrigatorios do resultado.'
-      : 'Na ausencia de guidance extra, baseie-se somente no briefing informado.'}
+      ? 'Considere os pontos importantes e a estrutura/gatilhos como requisitos obrigatórios do resultado.'
+      : 'Na ausência de guidance extra, baseie-se somente no briefing informado.'}
   `;
 
   const response = await getAiClient().models.generateContent({
@@ -557,46 +557,46 @@ export async function generatePhaseTasks(
 ): Promise<PhaseTask[]> {
   const webinarPhase = isWebinarPhase(phase);
   const prompt = `
-    Voce e especialista em Formula de Lancamento.
+    Você é especialista em Fórmula de Lançamento.
     Crie um checklist operacional para a fase "${phase.name}".
 
     Contexto:
     - Produto: ${data.productName}
     - Nicho: ${data.niche}
-    - Publico: ${data.targetAudience}
-    - Data oficial de lancamento: ${data.launchDate || 'nao informada'}
+    - Público: ${data.targetAudience}
+    - Data oficial de lançamento: ${data.launchDate || 'não informada'}
     - Modelo: ${launchModelLabel(data.launchModel)}
-    - Tipo de lancamento: ${launchTypeLabel(data.launchType)}
-    - Gatilhos gerais: ${data.generalTriggers || 'nao informado'}
+    - Tipo de lançamento: ${launchTypeLabel(data.launchType)}
+    - Gatilhos gerais: ${data.generalTriggers || 'não informado'}
     ${webinarPhase
-      ? `- Oferta: preco ${data.price}, bonus ${data.bonuses}, garantia ${data.guarantee}`
-      : '- Restricao critica: nao usar Informacoes de Oferta como base de conhecimento nesta fase.'}
+      ? `- Oferta: preço ${data.price}, bônus ${data.bonuses}, garantia ${data.guarantee}`
+      : '- Restrição crítica: não usar Informações de Oferta como base de conhecimento nesta fase.'}
     - Dor principal: ${data.mainProblem}
-    - Beneficio principal: ${data.mainBenefit}
+    - Benefício principal: ${data.mainBenefit}
     - Base de conhecimento do avatar:
     ${avatarKnowledgeBase(data)}
 
     Diretrizes extras:
-    - Pontos importantes: ${guidance?.keyPoints || 'nao informado'}
-    - Estrutura/gatilhos: ${guidance?.framework || 'nao informado'}
-    - Descricao da fase: ${phase.description}
+    - Pontos importantes: ${guidance?.keyPoints || 'não informado'}
+    - Estrutura/gatilhos: ${guidance?.framework || 'não informado'}
+    - Descrição da fase: ${phase.description}
 
     Regras:
     - Retorne de 8 a 12 tarefas.
-    - Tarefas curtas, praticas e acionaveis.
+    - Tarefas curtas, práticas e acionáveis.
     - Cada tarefa deve ter:
-      1) id (slug curto sem espacos),
-      2) title (maximo 90 caracteres),
+      1) id (slug curto sem espaços),
+      2) title (máximo 90 caracteres),
       3) details (1 a 2 frases objetivas),
       4) dueOffsetDays (inteiro relativo ao marco da fase, ex: -2, 0, +1),
-      5) knowledgeBase (resumo pratico da base de conhecimento para executar a tarefa),
+      5) knowledgeBase (resumo prático da base de conhecimento para executar a tarefa),
       6) contentMode ("none", "text" ou "image"),
-      7) proofRequired (true/false, quando precisa anexar prova da execucao).
+      7) proofRequired (true/false, quando precisa anexar prova da execução).
     ${webinarPhase
-      ? '- E permitido usar dados de Oferta na knowledgeBase quando fizer sentido para o webinario.'
-      : '- Proibido usar dados de Oferta na knowledgeBase desta fase. Oferta so pode ser base em webinarios.'}
-    - Nao incluir markdown.
-    - Nao incluir campos extras.
+      ? '- É permitido usar dados de Oferta na knowledgeBase quando fizer sentido para o webinário.'
+      : '- Proibido usar dados de Oferta na knowledgeBase desta fase. Oferta só pode ser base em webinários.'}
+    - Não incluir markdown.
+    - Não incluir campos extras.
   `;
 
   const response = await getAiClient().models.generateContent({
@@ -670,34 +670,34 @@ export async function generateTaskContentDraft(
   const isImage = task.contentMode === 'image';
   const webinarPhase = isWebinarPhase(phase);
   const prompt = `
-    Voce e especialista em Formula de Lancamento.
-    Gere o conteudo da tarefa abaixo.
+    Você é especialista em Fórmula de Lançamento.
+    Gere o conteúdo da tarefa abaixo.
 
     Contexto geral:
     - Produto: ${data.productName}
     - Nicho: ${data.niche}
-    - Publico: ${data.targetAudience}
-    - Beneficio principal: ${data.mainBenefit}
+    - Público: ${data.targetAudience}
+    - Benefício principal: ${data.mainBenefit}
     - Base de conhecimento do avatar:
     ${avatarKnowledgeBase(data)}
     - Fase: ${phase.name}
-    - Descricao da fase: ${phase.description}
+    - Descrição da fase: ${phase.description}
 
     Tarefa:
-    - Titulo: ${task.title}
+    - Título: ${task.title}
     - Detalhes: ${task.details}
-    - Base de conhecimento: ${task.knowledgeBase || 'nao informada'}
-    - Tipo de conteudo: ${task.contentMode || 'none'}
+    - Base de conhecimento: ${task.knowledgeBase || 'não informada'}
+    - Tipo de conteúdo: ${task.contentMode || 'none'}
     ${webinarPhase
-      ? '- Regra de oferta: pode usar Informacoes de Oferta como base de conhecimento neste webinario, se for relevante.'
-      : '- Regra de oferta: ignore qualquer Informacao de Oferta como base de conhecimento nesta fase.'}
+      ? '- Regra de oferta: pode usar Informações de Oferta como base de conhecimento neste webinário, se for relevante.'
+      : '- Regra de oferta: ignore qualquer Informação de Oferta como base de conhecimento nesta fase.'}
 
-    Regras de saida:
+    Regras de saída:
     ${isImage
-      ? '- Entregue um BRIEFING DE IMAGEM pronto para criacao visual, com: objetivo da imagem, conceito criativo, cena principal, texto na arte, variacoes e prompt final.'
+      ? '- Entregue um BRIEFING DE IMAGEM pronto para criação visual, com: objetivo da imagem, conceito criativo, cena principal, texto na arte, variações e prompt final.'
       : '- Entregue um TEXTO final pronto para uso operacional na tarefa (copy, script, mensagem ou passo a passo).'}
-    - Seja objetivo, pratico e focado em conversao.
-    - Nao use markdown.
+    - Seja objetivo, prático e focado em conversão.
+    - Não use markdown.
   `;
 
   const response = await getAiClient().models.generateContent({
@@ -757,39 +757,39 @@ PLANO OPERACIONAL DA TAREFA:
     : '';
 
   const expertKnowledgeBase = `
-Nome da expert: ${data.avatarName || 'nao informado'}
-Historia e posicionamento da expert: ${data.avatarStory || 'nao informado'}
-Nicho de atuacao: ${data.niche || 'nao informado'}
-Publico que ela atende: ${data.targetAudience || 'nao informado'}
-Problema que ela resolve: ${data.mainProblem || 'nao informado'}
-Transformacao / ROMA que ela entrega: ${data.mainBenefit || 'nao informado'}
-Produto / metodo: ${data.productName || 'nao informado'}
-Instagram @: ${data.expertInstagramHandle || 'nao informado'}
-Instagram URL: ${data.expertInstagramUrl || 'nao informado'}
-Facebook URL: ${data.expertFacebookUrl || 'nao informado'}
-YouTube URL: ${data.expertYoutubeUrl || 'nao informado'}
-Link principal da bio: ${data.expertLinkInBio || 'nao informado'}
-Foto de referencia da expert (URL): ${data.expertPhotoReferenceUrl || 'nao informado'}
-Guia de roupa/visual: ${data.expertLookGuide || 'nao informado'}
-Imagem de referencia da roupa (URL): ${data.expertLookReferenceUrl || 'nao informado'}
-Guia de ambiente/cenario: ${data.expertEnvironmentGuide || 'nao informado'}
-Imagem de referencia do ambiente (URL): ${data.expertEnvironmentReferenceUrl || 'nao informado'}
-Direcao artistica desejada: ${data.expertArtDirection || 'nao informado'}
+Nome da expert: ${data.avatarName || 'não informado'}
+História e posicionamento da expert: ${data.avatarStory || 'não informado'}
+Nicho de atuação: ${data.niche || 'não informado'}
+Público que ela atende: ${data.targetAudience || 'não informado'}
+Problema que ela resolve: ${data.mainProblem || 'não informado'}
+Transformação / ROMA que ela entrega: ${data.mainBenefit || 'não informado'}
+Produto / método: ${data.productName || 'não informado'}
+Instagram @: ${data.expertInstagramHandle || 'não informado'}
+Instagram URL: ${data.expertInstagramUrl || 'não informado'}
+Facebook URL: ${data.expertFacebookUrl || 'não informado'}
+YouTube URL: ${data.expertYoutubeUrl || 'não informado'}
+Link principal da bio: ${data.expertLinkInBio || 'não informado'}
+Foto de referência da expert (URL): ${data.expertPhotoReferenceUrl || 'não informado'}
+Guia de roupa/visual: ${data.expertLookGuide || 'não informado'}
+Imagem de referência da roupa (URL): ${data.expertLookReferenceUrl || 'não informado'}
+Guia de ambiente/cenário: ${data.expertEnvironmentGuide || 'não informado'}
+Imagem de referência do ambiente (URL): ${data.expertEnvironmentReferenceUrl || 'não informado'}
+Direção artística desejada: ${data.expertArtDirection || 'não informado'}
 `.trim();
 
   const taskOutputRule = subTaskId === 'ig-02'
     ? `
-TAREFA ESPECIFICA (IG-02): revisar bio de Instagram.
+TAREFA ESPECÍFICA (IG-02): revisar bio de Instagram.
 Entregue:
-1. Diagnostico da bio atual (pontos fortes e lacunas)
+1. Diagnóstico da bio atual (pontos fortes e lacunas)
 2. Checklist objetivo: cargo, promessa, palavra-chave e link
-3. 3 versoes de bio prontas para copiar (curta, media e direta para conversao)
-4. Sugestao final de CTA para stories e destaque fixo
-5. Validacao final das redes informadas para mencionar no perfil
+3. 3 versões de bio prontas para copiar (curta, média e direta para conversão)
+4. Sugestão final de CTA para stories e destaque fixo
+5. Validação final das redes informadas para mencionar no perfil
 `
     : subTaskId === 'ig-04'
     ? `
-TAREFA ESPECIFICA (IG-04): criar/atualizar post fixado apresentando o trabalho.
+TAREFA ESPECÍFICA (IG-04): criar/atualizar post fixado apresentando o trabalho.
 Entregue:
 1. Estrutura do post fixado (headline, proposta, prova, CTA)
 2. Legenda final pronta
@@ -799,8 +799,8 @@ Entregue:
     : '';
 
   const prompt = `
-Voce e copywriter senior especialista em Instagram e Formula de Lancamento.
-Gere o conteudo para a seguinte tarefa de criacao de audiencia.
+Você é copywriter sênior especialista em Instagram e Fórmula de Lançamento.
+Gere o conteúdo para a seguinte tarefa de criação de audiência.
 
 BASE DE CONHECIMENTO DA EXPERT (use isto como fonte principal):
 ${expertKnowledgeBase}
@@ -811,14 +811,64 @@ ${textBlock}
 ${taskOutputRule}
 
 REGRAS FINAIS:
-- O conteudo deve apresentar a EXPERT, nao o avatar/cliente.
-- Use os dados da historia, nicho, publico, problema e ROMA da expert para construir autoridade e identificacao.
-- Em tarefas visuais, respeite prioritariamente foto de referencia, roupa, ambiente e direcao artistica informados.
-- Se houver imagem de referencia de roupa/ambiente, priorize essa referencia visual acima da descricao em texto.
-- Linguagem em portugues brasileiro, tom de autoridade, calor humano e energia.
-- Seja especifico ao nicho e ao perfil da expert.
-- Nao use markdown.
-${wantsImage && wantsText ? '- Separe cada secao com uma linha "---".' : ''}
+- O conteúdo deve apresentar a EXPERT, não o avatar/cliente.
+- Use os dados da história, nicho, público, problema e ROMA da expert para construir autoridade e identificação.
+- Em tarefas visuais, respeite prioritariamente foto de referência, roupa, ambiente e direção artística informados.
+- Se houver imagem de referência de roupa/ambiente, priorize essa referência visual acima da descrição em texto.
+- Linguagem em português brasileiro, tom de autoridade, calor humano e energia.
+- Seja específico ao nicho e ao perfil da expert.
+- Não use markdown.
+${wantsImage && wantsText ? '- Separe cada seção com uma linha "---".' : ''}
+  `.trim();
+
+  const response = await getAiClient().models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+
+  return response.text?.trim() ?? '';
+}
+
+export async function generateLeadCaptureTaskContent(
+  data: LaunchData,
+  dayLabel: string,
+  blockTitle: string,
+  task: LeadCapturePrepTask
+): Promise<string> {
+  const prompt = `
+Você é estrategista sênior de Fórmula de Lançamento com foco em captação de leads e operação.
+Monte um plano de execução pronto para entregar a tarefa abaixo.
+
+CONTEXTO DO PROJETO:
+- Produto: ${data.productName || 'não informado'}
+- Nicho: ${data.niche || 'não informado'}
+- Público: ${data.targetAudience || 'não informado'}
+- Problema principal: ${data.mainProblem || 'não informado'}
+- ROMA / promessa principal: ${data.mainBenefit || 'não informado'}
+- Data oficial do lançamento: ${data.launchDate || 'não informado'}
+- Gatilhos gerais: ${data.generalTriggers || 'não informado'}
+
+BASE DO AVATAR:
+${avatarKnowledgeBase(data)}
+
+CONTEXTO OPERACIONAL:
+- Dia da semana de preparação: ${dayLabel}
+- Bloco: ${blockTitle}
+- Tarefa: ${task.title}
+- Observações extras: ${task.notes || 'não informado'}
+- Direção do estrategista: ${task.promptHint || 'não informado'}
+
+FORMATO DE SAÍDA:
+- Entregue em texto puro, sem markdown.
+- Organize em blocos curtos com estes títulos:
+OBJETIVO
+PASSO A PASSO
+MATERIAIS / DADOS NECESSÁRIOS
+ENTREGA ESPERADA
+CHECKLIST FINAL
+- Se a tarefa pedir criativo, copy, público, campanha, reels, áudios, lives ou stories, inclua um modelo prático pronto para usar dentro do plano.
+- Seja específico para o nicho e para a promessa do projeto.
+- Não responda de forma genérica.
   `.trim();
 
   const response = await getAiClient().models.generateContent({

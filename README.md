@@ -18,3 +18,11 @@ View your app in AI Studio: https://ai.studio/apps/51fd45bc-3d89-4f6c-b60c-4c8e5
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Safe Deploy
+
+This repository is locked to the Firebase project `fl-classico`.
+
+- `npm run deploy` is intentionally blocked.
+- `npm run deploy:fl-classico` is the only approved hosting deploy command for this app.
+- The deploy guard validates `.firebaserc`, `.env`, `metadata.json`, and `index.html` before publishing.

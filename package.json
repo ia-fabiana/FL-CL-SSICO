@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "deploy": "node scripts/block-generic-deploy.mjs",
+    "deploy:guard": "node scripts/verify-deploy-identity.mjs",
+    "deploy:fl-classico": "node scripts/deploy-hosting.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
